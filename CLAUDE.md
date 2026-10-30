@@ -4,7 +4,7 @@ Gamified construction site-reporting PWA: Duolingo-style streaks, XP, leagues an
 
 ## Stack (don't substitute without asking)
 - React 18 + TypeScript + Vite PWA (vite-plugin-pwa), Tailwind, Framer Motion
-- Firebase: Hosting, Auth (phone OTP + email link), Firestore (offline persistence), Storage (photos), Functions v2 (TS, Node 22), scheduled functions, FCM, App Check
+- Firebase: Hosting, Auth (email + password, Google), Firestore (offline persistence), Storage (photos), Functions v2 (TS, Node 22), scheduled functions, FCM, App Check
 - Firebase Emulator Suite for local dev and tests
 - GitHub Actions: lint + test on PR, preview channel on PR, deploy live on merge to main
 

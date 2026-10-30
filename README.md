@@ -9,6 +9,7 @@ Needs Node 22 (`.nvmrc`) and Java 21+ for the emulators.
 ```bash
 npm install
 npm run emulators   # Auth, Firestore, Storage, Functions + UI on http://localhost:4000
+npm run seed        # in a second terminal: demo org, 2 sites, 1 user per role, templates
 npm run dev         # web app on http://localhost:5180, talking to the emulators
 ```
 
@@ -35,4 +36,4 @@ The emulators run as `demo-site-streak`, so no real Firebase project or login is
 - `preview.yml` – deploys each PR to a 7-day Hosting preview channel and comments the link
 - `deploy.yml` – on merge to `main`, deploys Hosting, Functions and rules to the live project
 
-Both deploy workflows need a `FIREBASE_SERVICE_ACCOUNT` repo secret and the real project ID in `.firebaserc`.
+Both deploy workflows use the `FIREBASE_SERVICE_ACCOUNT_SITEE_EEAC7` repo secret (created by `firebase init hosting:github`).

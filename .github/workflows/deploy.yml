@@ -22,7 +22,7 @@ jobs:
       - name: Write service account
         run: printf '%s' "$SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
         env:
-          SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SITEE_EEAC7 }}
       # Hosting, Functions, and Firestore/Storage rules + indexes in one go.
       - run: npx firebase deploy --non-interactive --force
         env:

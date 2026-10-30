@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true,
+    // Scripts run straight from .ts via Node's built-in type stripping.
+    "erasableSyntaxOnly": true,
+    "types": ["node"]
+  },
+  "include": ["*.ts"]
+}
