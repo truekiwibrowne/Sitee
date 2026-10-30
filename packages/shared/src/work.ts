@@ -25,6 +25,8 @@ export const taskSchema = z.object({
   /** Task ids that must finish first (from unlock rules); shown as "waiting on…". */
   dependsOn: z.array(id),
   parentTaskId: id.nullable(),
+  /** Position on the day's task path, lowest first. */
+  order: z.number().int(),
   xp: z.number().int().nonnegative(),
   /** Set once submitted; for review tasks, the submission being reviewed. */
   submissionId: id.nullable(),

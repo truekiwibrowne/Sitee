@@ -33,6 +33,38 @@
   --shadow-chunky-coral: 0 4px 0 var(--color-coral-shadow);
   --shadow-chunky-ink: 0 4px 0 var(--color-ink-shadow);
   --shadow-chunky-locked: 0 4px 0 var(--color-locked-shadow);
+
+  /* Task path nodes sit on a deeper 6px edge. */
+  --shadow-node-yellow: 0 6px 0 var(--color-yellow-shadow);
+  --shadow-node-teal: 0 6px 0 var(--color-teal-shadow);
+  --shadow-node-coral: 0 6px 0 var(--color-coral-shadow);
+  --shadow-node-locked: 0 6px 0 var(--color-locked-shadow);
+
+  /* Brix's bob and cheer use Framer Motion; these are the CSS-only effects. */
+  --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
+  --animate-wiggle: wiggle 1.4s ease-in-out infinite;
+  --animate-pop: pop 0.45s ease-out both;
+  --animate-fall: fall 1.7s ease-in forwards;
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgb(255 201 60 / 0.75); }
+    70% { box-shadow: 0 0 0 16px rgb(255 201 60 / 0); }
+    100% { box-shadow: 0 0 0 0 rgb(255 201 60 / 0); }
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-7deg); }
+    75% { transform: rotate(7deg); }
+  }
+  @keyframes pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes fall {
+    0% { transform: translateY(-30px) rotate(0); opacity: 1; }
+    100% { transform: translateY(880px) rotate(600deg); opacity: 0.2; }
+  }
 }
 
 /* Press down onto the shadow on tap. */
