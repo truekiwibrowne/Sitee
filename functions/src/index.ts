@@ -3,7 +3,8 @@ import { initializeApp } from 'firebase-admin/app';
 
 initializeApp();
 
-// Keeps a runaway trigger from scaling up the bill during the pilot.
-setGlobalOptions({ maxInstances: 10 });
+// Same region as Firestore and Storage (Johannesburg). maxInstances keeps a
+// runaway trigger from scaling up the bill during the pilot.
+setGlobalOptions({ region: 'africa-south1', maxInstances: 10 });
 
 // Triggers (onSubmission, onReview, daily scheduler) land in step 7.

@@ -28,7 +28,7 @@ export const db = initializeFirestore(app, {
 });
 
 export const storage = getStorage(app);
-export const functions = getFunctions(app);
+export const functions = getFunctions(app, 'africa-south1');
 
 if (env.VITE_USE_EMULATORS === 'true') {
   const host = window.location.hostname;
