@@ -1,10 +1,165 @@
 rules_version = '2';
 
-// Locked down until the real rules land in step 4.
+// Everything lives under orgs/{orgId}. A user's orgId and role come from Auth custom
+// claims, which only the Admin SDK can set. Demo sandboxes are just orgs whose id
+// matches the visitor's claim, so the same rules keep them isolated.
+//
+// XP, streaks, leagues, task status, unlocks and review routing are written ONLY by
+// Cloud Functions (which bypass these rules). No client path below can touch them.
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function uid() {
+      return request.auth.uid;
+    }
+    function inOrg(orgId) {
+      return signedIn() && request.auth.token.orgId == orgId;
+    }
+    function isAdmin() {
+      return request.auth.token.role == 'admin';
+    }
+    function isManager() {
+      return request.auth.token.role in ['siteManager', 'projectManager', 'constructionManager', 'admin'];
+    }
+
+    match /orgs/{orgId} {
+      allow read: if inOrg(orgId);
+
+      function task(taskId) {
+        return get(/databases/$(database)/documents/orgs/$(orgId)/tasks/$(taskId)).data;
+      }
+      function submission(submissionId) {
+        return get(/databases/$(database)/documents/orgs/$(orgId)/submissions/$(submissionId)).data;
+      }
+
+      match /users/{userId} {
+        allow read: if inOrg(orgId);
+        // People may only rename themselves. Role, sites and all game state are server-only.
+        allow update: if inOrg(orgId) && userId == uid()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 80;
+      }
+
+      // Admin-managed setup. Settings screens arrive in Phase 2.
+      match /projects/{projectId} {
+        allow read: if inOrg(orgId);
+        allow write: if inOrg(orgId) && isAdmin();
+      }
+      match /sites/{siteId} {
+        allow read: if inOrg(orgId);
+        allow write: if inOrg(orgId) && isAdmin();
+      }
+      match /taskTemplates/{templateId} {
+        allow read: if inOrg(orgId);
+        allow write: if inOrg(orgId) && isAdmin();
+      }
+
+      // Created and moved through locked → open → submitted → reviewed by Cloud Functions.
+      match /tasks/{taskId} {
+        allow read: if inOrg(orgId) && (resource.data.assigneeId == uid() || isManager());
+      }
+
+      // One submission per task: the doc id is the task id, so an offline retry can't
+      // create a duplicate. Immutable once written. Answers are checked against the
+      // template by the onSubmission function.
+      match /submissions/{submissionId} {
+        allow read: if inOrg(orgId) && (resource.data.authorId == uid() || isManager());
+        allow create: if inOrg(orgId) && validSubmission(submissionId, request.resource.data);
+
+        function validSubmission(taskId, d) {
+          let t = task(taskId);
+          return d.keys().hasOnly(['taskId', 'templateId', 'authorId', 'siteId', 'answers', 'photos', 'gps', 'capturedAt', 'syncedAt'])
+            && d.keys().hasAll(['taskId', 'templateId', 'authorId', 'siteId', 'answers', 'photos', 'gps', 'capturedAt', 'syncedAt'])
+            && d.taskId == taskId
+            && d.authorId == uid()
+            && t.assigneeId == uid()
+            && t.kind != 'review'
+            && t.status in ['open', 'late']
+            && d.siteId == t.siteId
+            && d.templateId == t.templateId
+            && d.answers is map
+            && d.photos is list
+            && d.photos.size() <= 20
+            && (d.gps == null || d.gps is map)
+            && d.capturedAt is timestamp
+            // Must be serverTimestamp(): the phone can't fake when it synced.
+            && d.syncedAt == request.time;
+        }
+      }
+
+      // The doc id is the reviewer's review-task id. You can only review what you were assigned.
+      match /reviews/{reviewTaskId} {
+        allow read: if inOrg(orgId)
+          && (resource.data.reviewerId == uid() || resource.data.authorId == uid() || isManager());
+        allow create: if inOrg(orgId) && validReview(reviewTaskId, request.resource.data);
+
+        function validReview(reviewTaskId, d) {
+          let rt = task(reviewTaskId);
+          let s = submission(d.submissionId);
+          return d.keys().hasOnly(['submissionId', 'taskId', 'reviewerId', 'authorId', 'stars', 'checks', 'comment', 'crossSite', 'auditedBy', 'createdAt'])
+            && d.keys().hasAll(['submissionId', 'taskId', 'reviewerId', 'authorId', 'stars', 'checks', 'comment', 'crossSite', 'auditedBy', 'createdAt'])
+            && rt.kind == 'review'
+            && rt.assigneeId == uid()
+            && rt.status in ['open', 'late']
+            && rt.submissionId == d.submissionId
+            && d.reviewerId == uid()
+            && s.authorId != uid()
+            && d.authorId == s.authorId
+            && d.taskId == s.taskId
+            && d.stars in [1, 2, 3]
+            && d.checks is map
+            && d.comment is string
+            && d.comment.size() <= 2000
+            && d.crossSite is bool
+            && d.auditedBy == null
+            && d.createdAt == request.time;
+        }
+      }
+
+      // Append-only XP ledger and league tables: Cloud Functions only.
+      match /xpEvents/{eventId} {
+        allow read: if inOrg(orgId) && (resource.data.userId == uid() || isManager());
+      }
+      match /leagues/{weekId}/members/{memberId} {
+        allow read: if inOrg(orgId);
+      }
+      match /quests/{questId} {
+        allow read: if inOrg(orgId);
+      }
+
+      // Learning (Phase 2).
+      match /trainingModules/{moduleId} {
+        allow read: if inOrg(orgId);
+        allow write: if inOrg(orgId) && isAdmin();
+        // Quiz answers. Only Cloud Functions grade quizzes.
+        match /private/{docId} {
+          allow read, write: if false;
+        }
+      }
+      match /trainingSessions/{sessionId} {
+        allow read: if inOrg(orgId);
+      }
+      match /attendance/{attendanceId} {
+        allow read: if inOrg(orgId) && (resource.data.userId == uid() || isManager());
+      }
+      match /competencies/{competencyId} {
+        allow read: if inOrg(orgId);
+      }
+
+      // Earned value (Phase 3).
+      match /boqItems/{itemId} {
+        allow read: if inOrg(orgId);
+        allow write: if inOrg(orgId) && isAdmin();
+      }
+      match /progressEntries/{entryId} {
+        allow read: if inOrg(orgId);
+      }
     }
   }
 }

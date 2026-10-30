@@ -21,6 +21,13 @@ foreman → siteManager → projectManager → constructionManager, plus admin. 
 - Offline-first: queue submissions and photos; compress photos to ~300 KB; in-app camera with GPS + time.
 - Photos go to Firebase Storage, never the repo.
 
+## App Store and Google Play (later)
+The PWA will be wrapped with Capacitor for both stores. Build so that's a wrap, not a rewrite:
+- Keep device features (camera, GPS, haptics, push, Google sign-in) behind small wrappers in `apps/web/src/device/` so native plugins can be swapped in.
+- Apple requires Sign in with Apple whenever Google sign-in is offered, and both stores require in-app account deletion. Plan for both.
+- Respect safe areas (`env(safe-area-inset-*)`) on headers and the bottom nav.
+- Demo mode doubles as the reviewer login for App Review.
+
 ## Demo mode (live site)
 "Try the demo" on the sign-in screen: anonymous sign-in, then a Cloud Function copies the demo org into a private sandbox (`orgs/demo-{uid}`) with `demo: true` claims for the chosen role. Sandboxes are isolated and deleted after 24 hrs. Rules must keep demo users inside their own sandbox and cap their uploads. Functions are bundled with esbuild so they can import `packages/shared`.
 

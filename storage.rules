@@ -1,10 +1,37 @@
 rules_version = '2';
 
-// Locked down until the real rules land in step 4.
+// Site photos only: orgs/{orgId}/sites/{siteId}/submissions/{submissionId}/{photoId}.jpg
+// (see photoPath in packages/shared). The submission id is the task id, so uploads are
+// checked against that task in Firestore. Photos are compressed to ~300 KB on the phone.
+
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read, write: if false;
+
+    function inOrg(orgId) {
+      return request.auth != null && request.auth.token.orgId == orgId;
+    }
+
+    // Demo sandboxes get a tighter cap so the public demo can't run up storage costs.
+    function maxBytes() {
+      return request.auth.token.get('demo', false) == true ? 500 * 1024 : 1024 * 1024;
+    }
+
+    function task(orgId, taskId) {
+      return firestore.get(/databases/(default)/documents/orgs/$(orgId)/tasks/$(taskId)).data;
+    }
+
+    match /orgs/{orgId}/sites/{siteId}/submissions/{submissionId}/{photoId} {
+      allow read: if inOrg(orgId);
+
+      // Create only: a photo can't be swapped after upload. No deletes from the phone.
+      allow create: if inOrg(orgId)
+        && resource == null
+        && photoId.matches('[A-Za-z0-9_-]+[.]jpg')
+        && request.resource.contentType == 'image/jpeg'
+        && request.resource.size > 0
+        && request.resource.size < maxBytes()
+        && task(orgId, submissionId).assigneeId == request.auth.uid
+        && task(orgId, submissionId).siteId == siteId;
     }
   }
 }

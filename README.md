@@ -21,7 +21,7 @@ The emulators run as `demo-site-streak`, so no real Firebase project or login is
 | `npm run typecheck` | `tsc --noEmit` in each workspace |
 | `npm run build` | shared → web → functions |
 | `npm test` | Unit tests |
-| `npm run test:emulators` | Tests with Auth/Firestore/Storage emulators running (what CI runs) |
+| `npm run test:emulators` | Unit tests plus the Firestore/Storage security-rules tests in `tests/rules`, inside the emulators (what CI runs) |
 
 ## Layout
 
