@@ -1,5 +1,6 @@
 // Seeds the local emulators: 1 org, 1 project, 2 sites, 1 user per role and the
 // two MVP task templates. Safe to re-run; it overwrites the same fixed IDs.
+// Every document is parsed with the shared schemas first, so seed data can't drift.
 //
 //   npm run emulators   (in one terminal)
 //   npm run seed        (in another)
@@ -7,7 +8,16 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import type { Role } from '@site-streak/shared';
+import {
+  orgSchema,
+  paths,
+  projectSchema,
+  siteSchema,
+  taskTemplateSchema,
+  userSchema,
+  type LeagueTier,
+  type Role,
+} from '@site-streak/shared';
 
 // Never let this script reach a real project.
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
@@ -28,7 +38,6 @@ const DEV_PASSWORD = 'site-streak-dev';
 initializeApp({ projectId: PROJECT_ID });
 const auth = getAuth();
 const db = getFirestore();
-const org = db.doc(`orgs/${ORG_ID}`);
 const now = Timestamp.now();
 
 type SeedUser = {
@@ -40,7 +49,7 @@ type SeedUser = {
   // Demo game state so the Today screen has something to show.
   xpTotal?: number;
   streak?: number;
-  league?: string;
+  league?: LeagueTier;
 };
 
 const users: SeedUser[] = [
@@ -63,82 +72,96 @@ async function upsertAuthUser(u: SeedUser) {
 }
 
 async function seed() {
-  await org.set({ name: 'Demo Construction Ltd', createdAt: now });
+  await db.doc(paths.org(ORG_ID)).set(orgSchema.parse({ name: 'Demo Construction Ltd', dailyXpCap: 300, createdAt: now }));
 
-  await org.collection('projects').doc(PROJECT).set({
-    name: 'Riverside Apartments',
-    timezone: TIMEZONE,
-    siteIds: [SITE_A, SITE_B],
-    createdAt: now,
-  });
+  await db.collection(paths.projects(ORG_ID)).doc(PROJECT).set(
+    projectSchema.parse({
+      name: 'Riverside Apartments',
+      timezone: TIMEZONE,
+      siteIds: [SITE_A, SITE_B],
+      baselineId: null,
+      createdAt: now,
+    }),
+  );
 
   const sites = [
     { id: SITE_A, name: 'Riverside Block A' },
     { id: SITE_B, name: 'Riverside Block B' },
   ];
   for (const s of sites) {
-    await org.collection('sites').doc(s.id).set({
-      name: s.name,
-      projectId: PROJECT,
-      timezone: TIMEZONE,
-      memberIds: users.filter((u) => u.siteIds.includes(s.id)).map((u) => u.uid),
-      createdAt: now,
-    });
+    await db.collection(paths.sites(ORG_ID)).doc(s.id).set(
+      siteSchema.parse({
+        name: s.name,
+        projectId: PROJECT,
+        timezone: TIMEZONE,
+        memberIds: users.filter((u) => u.siteIds.includes(s.id)).map((u) => u.uid),
+        geofence: null,
+        createdAt: now,
+      }),
+    );
   }
 
   for (const u of users) {
     await upsertAuthUser(u);
-    await org.collection('users').doc(u.uid).set({
-      name: u.name,
-      email: u.email,
-      role: u.role,
-      siteIds: u.siteIds,
-      xpTotal: u.xpTotal ?? 0,
-      streak: u.streak ?? 0,
-      streakFreezes: 0,
-      league: u.league ?? 'bronze',
-      reviewAccuracy: null,
-      createdAt: now,
-    });
+    await db.collection(paths.users(ORG_ID)).doc(u.uid).set(
+      userSchema.parse({
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        siteIds: u.siteIds,
+        xpTotal: u.xpTotal ?? 0,
+        streak: u.streak ?? 0,
+        streakFreezes: 0,
+        league: u.league ?? 'bronze',
+        reviewAccuracy: null,
+        createdAt: now,
+      }),
+    );
   }
 
-  await org.collection('taskTemplates').doc('daily-site-report').set({
-    name: 'Daily site report',
-    role: 'foreman',
-    frequency: 'workday',
-    dueTime: '18:00',
-    xp: 50,
-    reviewRule: 'siteManagerPlusCrossSite',
-    unlockRules: [],
-    fields: [
-      { id: 'weather', label: 'Weather', type: 'pickList', required: true, options: ['Sunny', 'Cloudy', 'Light rain', 'Heavy rain', 'Windy'] },
-      { id: 'labour', label: 'Labour on site', type: 'number', required: true, min: 0 },
-      { id: 'photos', label: 'Site photos', type: 'photo', required: true, minPhotos: 3 },
-      { id: 'delays', label: 'Delays and cause', type: 'text', required: false },
-      { id: 'tomorrow', label: "Tomorrow's plan", type: 'text', required: true },
-    ],
-    active: true,
-    createdAt: now,
-  });
+  const templates = db.collection(paths.taskTemplates(ORG_ID));
 
-  await org.collection('taskTemplates').doc('rebar-hold-point').set({
-    name: 'Rebar hold point',
-    role: 'foreman',
-    frequency: 'perHoldPoint',
-    dueTime: null,
-    xp: 30,
-    reviewRule: 'siteManager',
-    unlockRules: [],
-    fields: [
-      { id: 'element', label: 'Element / location', type: 'text', required: true },
-      { id: 'barsMatchDrawing', label: 'Bar size and spacing match drawing', type: 'pickList', required: true, options: ['Yes', 'No'] },
-      { id: 'coverMm', label: 'Cover checked (mm)', type: 'number', required: true, min: 0 },
-      { id: 'photos', label: 'Rebar photos', type: 'photo', required: true, minPhotos: 4 },
-      { id: 'notes', label: 'Notes', type: 'text', required: false },
-    ],
-    active: true,
-    createdAt: now,
-  });
+  await templates.doc('daily-site-report').set(
+    taskTemplateSchema.parse({
+      name: 'Daily site report',
+      role: 'foreman',
+      frequency: 'workday',
+      dueTime: '18:00',
+      xp: 50,
+      reviewRule: 'siteManagerPlusCrossSite',
+      unlockRules: [],
+      fields: [
+        { id: 'weather', label: 'Weather', type: 'pickList', required: true, options: ['Sunny', 'Cloudy', 'Light rain', 'Heavy rain', 'Windy'] },
+        { id: 'labour', label: 'Labour on site', type: 'number', required: true, min: 0, unit: 'people' },
+        { id: 'photos', label: 'Site photos', type: 'photo', required: true, minPhotos: 3 },
+        { id: 'delays', label: 'Delays and cause', type: 'text', required: false },
+        { id: 'tomorrow', label: "Tomorrow's plan", type: 'text', required: true },
+      ],
+      active: true,
+      createdAt: now,
+    }),
+  );
+
+  await templates.doc('rebar-hold-point').set(
+    taskTemplateSchema.parse({
+      name: 'Rebar hold point',
+      role: 'foreman',
+      frequency: 'perHoldPoint',
+      dueTime: null,
+      xp: 30,
+      reviewRule: 'siteManager',
+      unlockRules: [],
+      fields: [
+        { id: 'element', label: 'Element / location', type: 'text', required: true },
+        { id: 'barsMatchDrawing', label: 'Bar size and spacing match drawing', type: 'pickList', required: true, options: ['Yes', 'No'] },
+        { id: 'coverMm', label: 'Cover checked', type: 'number', required: true, min: 0, unit: 'mm' },
+        { id: 'photos', label: 'Rebar photos', type: 'photo', required: true, minPhotos: 4 },
+        { id: 'notes', label: 'Notes', type: 'text', required: false },
+      ],
+      active: true,
+      createdAt: now,
+    }),
+  );
 
   console.log(`Seeded org ${ORG_ID}: 2 sites, ${users.length} users, 2 templates.`);
 }

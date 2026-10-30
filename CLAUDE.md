@@ -21,6 +21,9 @@ foreman → siteManager → projectManager → constructionManager, plus admin. 
 - Offline-first: queue submissions and photos; compress photos to ~300 KB; in-app camera with GPS + time.
 - Photos go to Firebase Storage, never the repo.
 
+## Demo mode (live site)
+"Try the demo" on the sign-in screen: anonymous sign-in, then a Cloud Function copies the demo org into a private sandbox (`orgs/demo-{uid}`) with `demo: true` claims for the chosen role. Sandboxes are isolated and deleted after 24 hrs. Rules must keep demo users inside their own sandbox and cap their uploads. Functions are bundled with esbuild so they can import `packages/shared`.
+
 ## Look and feel
 Friendly and playful, not corporate. Tokens: bg #FFF7E8, ink #24324A, muted #5A6478, yellow #FFC93C (shadow #D69E00), teal #2BB3A3 (shadow #17766C), coral #FF7A59 (shadow #C2410C), locked #E6E1D6. Font: Nunito 700–900. Chunky rounded buttons with a 4px darker bottom shadow that presses down on tap. Brix = brick in a yellow hard hat (SVG component; idle bob, cheer, worried states). Confetti + XP count-up on completion. Respect prefers-reduced-motion. Touch targets ≥ 44px. Mobile-first at 390px. Don't copy Duolingo assets or colours.
 
