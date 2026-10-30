@@ -16,7 +16,7 @@
     "emulators": "npm run build -w packages/shared && npm run build -w functions && firebase emulators:start --project demo-site-streak",
     "build": "npm run build -w packages/shared && npm run build -w apps/web && npm run build -w functions",
     "seed": "npm run build -w packages/shared && node scripts/seed.ts",
-    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p scripts",
+    "typecheck": "npm run build -w packages/shared && npm run typecheck --workspaces --if-present && tsc -p scripts",
     "lint": "eslint .",
     "test": "npm run build -w packages/shared && npm run test --workspaces --if-present",
     "test:emulators": "firebase emulators:exec --project demo-site-streak --only auth,firestore,storage \"npm test && npm run test:rules -w tests/rules\""

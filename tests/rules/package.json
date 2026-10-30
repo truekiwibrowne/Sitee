@@ -7,6 +7,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@site-streak/shared": "*",
     "@firebase/rules-unit-testing": "^6.0.0",
     "firebase": "^13.1.0"
   }
