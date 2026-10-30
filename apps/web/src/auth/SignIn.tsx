@@ -7,12 +7,15 @@ import {
   signInWithPopup,
   updateProfile,
 } from 'firebase/auth';
-import { ROLE_LABEL } from '@site-streak/shared';
+import { DEMO_PEOPLE, ROLE_LABEL, type Role } from '@site-streak/shared';
 import { auth } from '../lib/firebase';
 import { Button } from '../ui/Button';
-import { DEV_PASSWORD, DEV_USERS } from './devUsers';
+import { startDemo } from './demo';
 
 const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true';
+
+// Emulator-only password for the seeded accounts (see scripts/seed.ts).
+const DEV_PASSWORD = 'site-streak-dev';
 
 const inputClass =
   'min-h-12 w-full rounded-btn border-2 border-card-line bg-white px-4 text-lg font-bold text-ink placeholder:text-muted/60 focus:border-yellow focus:outline-none';
@@ -70,8 +73,47 @@ export function SignIn() {
         </p>
       )}
 
+      <TryDemo onError={setError} />
+
       {useEmulators && <DevSignIn onError={setError} />}
     </main>
+  );
+}
+
+/** Lets anyone try a role in a private, throwaway copy of the demo company. */
+function TryDemo({ onError }: { onError: (msg: string) => void }) {
+  const [starting, setStarting] = useState<Role | null>(null);
+
+  async function begin(role: Role) {
+    onError('');
+    setStarting(role);
+    try {
+      await startDemo(role);
+    } catch (err) {
+      console.error('Demo failed to start', err);
+      onError('Couldn’t start the demo. Check your signal and try again.');
+      setStarting(null);
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-3 rounded-card border-2 border-yellow bg-white p-4">
+      <div>
+        <h2 className="text-lg font-black">Just looking? Try the demo</h2>
+        <p className="text-sm text-muted">No sign-up. Pick a role and play with a sample site. It resets after a day.</p>
+      </div>
+      {DEMO_PEOPLE.map((p) => (
+        <Button
+          key={p.role}
+          variant="ghost"
+          caps={false}
+          disabled={starting !== null}
+          onClick={() => begin(p.role)}
+        >
+          {starting === p.role ? 'Building your demo site…' : `Try as ${ROLE_LABEL[p.role].toLowerCase()}`}
+        </Button>
+      ))}
+    </section>
   );
 }
 
@@ -206,7 +248,7 @@ function DevSignIn({ onError }: { onError: (msg: string) => void }) {
   return (
     <section className="flex flex-col gap-2 rounded-card border-2 border-dashed border-locked-shadow p-4">
       <h2 className="text-sm font-black text-muted">EMULATOR · SIGN IN AS</h2>
-      {DEV_USERS.map((u) => (
+      {DEMO_PEOPLE.map((u) => (
         <Button
           key={u.email}
           variant="ghost"

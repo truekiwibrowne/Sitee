@@ -14,7 +14,8 @@ export function App() {
     );
   }
 
-  if (!user) return <SignIn />;
+  // A demo visitor stays on the sign-in screen until their sandbox is ready.
+  if (!user || (user.isAnonymous && !claims)) return <SignIn />;
 
   if (!claims) {
     return (
@@ -35,7 +36,17 @@ export function App() {
   // Placeholder home until the Foreman Today screen (step 5).
   return (
     <main className="mx-auto flex min-h-dvh max-w-[390px] flex-col gap-5 px-5 py-10">
-      <h1 className="text-3xl font-black">Hi, {user.displayName ?? 'there'}!</h1>
+      {claims.demo && (
+        <div className="flex flex-col gap-2 rounded-card border-2 border-yellow bg-white p-4">
+          <p>
+            <strong className="font-black">Demo mode.</strong> Everything here is sample data and resets after a day.
+          </p>
+          <Button variant="ink" onClick={signOut}>
+            Create a real account
+          </Button>
+        </div>
+      )}
+      <h1 className="text-3xl font-black">Hi, {user.displayName ?? (claims.demo ? 'demo visitor' : 'there')}!</h1>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-card border-2 border-card-line bg-white p-4">
         <dt className="text-muted">Role</dt>
         <dd className="font-black">{ROLE_LABEL[claims.role]}</dd>

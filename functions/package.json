@@ -7,12 +7,15 @@
     "node": "22"
   },
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc --watch",
+    "build": "tsc --noEmit && esbuild src/index.ts --bundle --platform=node --target=node22 --format=esm --sourcemap --outfile=lib/index.js --external:firebase-admin --external:firebase-functions",
+    "build:watch": "esbuild src/index.ts --bundle --platform=node --target=node22 --format=esm --sourcemap --outfile=lib/index.js --external:firebase-admin --external:firebase-functions --watch",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "firebase-admin": "^14.5.0",
     "firebase-functions": "^7.4.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

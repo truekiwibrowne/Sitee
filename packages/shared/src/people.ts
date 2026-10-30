@@ -10,6 +10,9 @@ export const orgSchema = z.object({
   /** Max XP one person can earn per site-local day. */
   dailyXpCap: z.number().int().positive(),
   createdAt: timestamp,
+  /** Set on "Try the demo" sandboxes only. The cleanup job deletes them after expiresAt. */
+  demo: z.literal(true).optional(),
+  expiresAt: timestamp.optional(),
 });
 export type Org = z.infer<typeof orgSchema>;
 

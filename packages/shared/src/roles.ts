@@ -17,6 +17,8 @@ export const ROLE_LABEL: Record<Role, string> = {
 export type UserClaims = {
   orgId: string;
   role: Role;
+  /** True for "Try the demo" visitors, whose org is a throwaway sandbox. */
+  demo?: boolean;
 };
 
 export function isRole(value: unknown): value is Role {

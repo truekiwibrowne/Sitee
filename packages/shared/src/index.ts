@@ -8,3 +8,4 @@ export * from './game.js';
 export * from './training.js';
 export * from './progress.js';
 export * from './paths.js';
+export * from './demoData.js';

@@ -34,7 +34,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({
           loading: false,
           user,
-          claims: valid ? { orgId: claims.orgId as string, role: claims.role as UserClaims['role'] } : null,
+          claims: valid
+            ? { orgId: claims.orgId as string, role: claims.role as UserClaims['role'], demo: claims.demo === true }
+            : null,
         });
       }),
     [],
