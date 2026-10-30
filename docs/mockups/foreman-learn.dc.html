@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Learn – assigned training</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#24324A}a:hover{color:#000}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.brix{animation:bob 2.6s ease-in-out infinite}
+@keyframes cheer{0%{transform:translateY(0) rotate(0)}30%{transform:translateY(-20px) rotate(-8deg)}60%{transform:translateY(0) rotate(6deg)}100%{transform:translateY(0) rotate(0)}}
+.brix-cheer{animation:cheer 0.7s ease-out 2}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,201,60,0.75)}70%{box-shadow:0 0 0 16px rgba(255,201,60,0)}100%{box-shadow:0 0 0 0 rgba(255,201,60,0)}}
+.pulse{animation:pulse 1.8s ease-out infinite}
+@keyframes pop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+.pop{animation:pop 0.45s ease-out both}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.shake{animation:shake 0.4s ease-in-out}
+@keyframes scan{0%{top:10px}100%{top:calc(100% - 13px)}}
+.scanline{position:absolute;left:10px;right:10px;height:3px;border-radius:2px;background:#2BB3A3;animation:scan 0.9s ease-in-out infinite alternate}
+@keyframes fall{0%{transform:translateY(-30px) rotate(0);opacity:1}100%{transform:translateY(880px) rotate(600deg);opacity:0.2}}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.confetti span{position:absolute;top:0;width:10px;height:14px;border-radius:3px;animation:fall 1.7s ease-in forwards}
+.press{transition:transform 0.08s}
+.press:active{transform:translateY(4px)}
+@media (prefers-reduced-motion: reduce){.brix,.brix-cheer,.pulse,.pop,.shake,.scanline,.confetti span{animation:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; background: #FFF7E8; color: #24324A; font-family: 'Nunito', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 18px 20px 8px">
+
+<div style="display: flex; justify-content: space-between; align-items: center">
+<h1 style="margin: 0; font-size: 28px; font-weight: 900">Learn</h1>
+<span style="display: flex; align-items: center; gap: 6px; background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 999px; padding: 6px 12px; font-weight: 900; font-size: 16px; color: #17766C">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="#2BB3A3" stroke="#17766C" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"></path></svg>{{xpText}}</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; position: relative">
+<svg class="{{brixClass}}" width="72" height="72" viewBox="0 0 120 120" role="img" aria-label="Brix, the hard-hat mascot">
+<rect x="22" y="44" width="76" height="62" rx="20" fill="#FF8C5A" stroke="#24324A" stroke-width="4"></rect>
+<path d="M24 50a36 30 0 0 1 72 0z" fill="#FFC93C" stroke="#24324A" stroke-width="4" stroke-linejoin="round"></path>
+<rect x="14" y="46" width="92" height="10" rx="5" fill="#FFC93C" stroke="#24324A" stroke-width="4"></rect>
+<path d="M60 22v24" stroke="#24324A" stroke-width="4" stroke-linecap="round"></path>
+<circle cx="46" cy="72" r="9" fill="#FFFFFF" stroke="#24324A" stroke-width="3"></circle>
+<circle cx="74" cy="72" r="9" fill="#FFFFFF" stroke="#24324A" stroke-width="3"></circle>
+<circle cx="48" cy="73" r="4.5" fill="#24324A"></circle>
+<circle cx="76" cy="73" r="4.5" fill="#24324A"></circle>
+<path d="{{mouthD}}" fill="{{mouthFill}}" stroke="#24324A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<div style="flex: 1; background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 18px; padding: 10px 12px; font-size: 14px; font-weight: 700; line-height: 1.35">{{msg}}</div>
+<sc-if value="{{celebrate}}" hint-placeholder-val="{{false}}">
+<span class="pop" style="position: absolute; left: 40px; top: -8px; background: #2BB3A3; color: #FFFFFF; font-weight: 900; font-size: 15px; padding: 4px 10px; border-radius: 999px; box-shadow: 0 3px 0 #17766C">{{gain}}</span>
+</sc-if>
+</div>
+
+<div style="background: #24324A; color: #FFFFFF; border-radius: 18px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #FFC93C">Assigned by [SITE MANAGER] · due Fri</span>
+<span style="font-size: 18px; font-weight: 900">Hold-point inspection</span>
+<span style="font-size: 13px; font-weight: 700; color: #D7DEE8">4-min video + quick quiz · +40 XP</span>
+</div>
+
+<sc-if value="{{showPath}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 4px 0">
+<div style="display: flex; align-items: center; gap: 14px; padding-left: 10px">
+<div style="width: 60px; height: 56px; flex-shrink: 0; border-radius: 50%; background: #2BB3A3; box-shadow: 0 5px 0 #17766C; display: flex; align-items: center; justify-content: center">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+</div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800">Daily report basics</span><span style="font-size: 13px; font-weight: 700; color: #17766C">Passed</span></div>
+</div>
+
+<sc-if value="{{lessonOpen}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: center; gap: 14px; padding-left: 60px">
+<div class="pulse" style="border-radius: 50%; flex-shrink: 0">
+<button class="press" onClick="{{startVideo}}" aria-label="Watch lesson" style="width: 68px; height: 64px; border: 0; border-radius: 50%; background: #FFC93C; box-shadow: 0 5px 0 #D69E00; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="#24324A" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+<span style="font-size: 16px; font-weight: 800">Hold-point inspection</span>
+<button class="press" onClick="{{startVideo}}" style="min-height: 44px; padding: 0 16px; border: 0; border-radius: 14px; background: #24324A; box-shadow: 0 4px 0 #0F1726; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 900; letter-spacing: 0.06em; cursor: pointer">WATCH LESSON</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{lessonDone}}" hint-placeholder-val="{{false}}">
+<div class="pop" style="display: flex; align-items: center; gap: 14px; padding-left: 60px">
+<div style="width: 60px; height: 56px; flex-shrink: 0; border-radius: 50%; background: #2BB3A3; box-shadow: 0 5px 0 #17766C; display: flex; align-items: center; justify-content: center">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+</div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800">Hold-point inspection</span><span style="font-size: 13px; font-weight: 700; color: #17766C">Passed · +40 XP</span></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ncrLocked}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: center; gap: 14px; padding-left: 100px">
+<div style="width: 60px; height: 56px; flex-shrink: 0; border-radius: 50%; background: #E6E1D6; box-shadow: 0 5px 0 #C9C2B3; display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7A7364" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+</div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800; color: #5A6478">Writing an NCR</span><span style="font-size: 13px; font-weight: 700; color: #5A6478">Unlocks after hold points</span></div>
+</div>
+</sc-if>
+<sc-if value="{{ncrOpen}}" hint-placeholder-val="{{false}}">
+<div class="pop" style="display: flex; align-items: center; gap: 14px; padding-left: 100px">
+<div class="pulse" style="width: 60px; height: 56px; flex-shrink: 0; border-radius: 50%; background: #FFC93C; box-shadow: 0 5px 0 #D69E00; display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="#24324A" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+</div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800">Writing an NCR</span><span style="font-size: 13px; font-weight: 700; color: #C2410C">Unlocked! Up next</span></div>
+</div>
+</sc-if>
+
+<div style="display: flex; align-items: center; gap: 14px; padding-left: 60px">
+<div style="width: 60px; height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; opacity: 0.6">
+<svg width="44" height="52" viewBox="0 0 44 52" aria-hidden="true"><path d="M8 4h28v22a14 14 0 0 1-28 0z" fill="#D7DEE8" stroke="#24324A" stroke-width="3" stroke-linejoin="round"></path><path d="M14 36l-4 14 12-6 12 6-4-14" fill="#FF7A59" stroke="#24324A" stroke-width="3" stroke-linejoin="round"></path></svg>
+</div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800">Hold-Point Inspector</span><span style="font-size: 13px; font-weight: 700; color: #5A6478">Badge for the full path</span></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{showVideo}}" hint-placeholder-val="{{false}}">
+<div class="pop" style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 20px; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="height: 170px; border-radius: 14px; background: #24324A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #FFFFFF">
+<svg width="44" height="44" viewBox="0 0 24 24" fill="#FFC93C" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+<span style="font-size: 14px; font-weight: 800">Hold-point inspection · 4:12</span>
+</div>
+<div style="height: 12px; border-radius: 999px; background: #F1E6CF; overflow: hidden"><div style="height: 100%; border-radius: 999px; background: #2BB3A3; width: {{vidPct}}%"></div></div>
+<sc-if value="{{vidPlaying}}" hint-placeholder-val="{{true}}"><span style="font-size: 13px; font-weight: 700; color: #5A6478">Lesson playing… no skipping ahead</span></sc-if>
+<sc-if value="{{vidDone}}" hint-placeholder-val="{{false}}">
+<button class="press pop" onClick="{{toQuiz}}" style="min-height: 48px; border: 0; border-radius: 14px; background: #FFC93C; box-shadow: 0 4px 0 #D69E00; color: #24324A; font-family: inherit; font-size: 15px; font-weight: 900; letter-spacing: 0.04em; cursor: pointer">TAKE THE QUIZ</button>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{showQuiz}}" hint-placeholder-val="{{false}}">
+<div class="{{quizClass}}" style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #5A6478">Quick check</span>
+<span style="font-size: 17px; font-weight: 900; line-height: 1.3">When does the rebar hold point need to be signed off?</span>
+<button class="press" onClick="{{ansA}}" style="min-height: 48px; text-align: left; padding: 0 14px; border: 2px solid #E6DCC6; border-radius: 14px; background: #FFFFFF; box-shadow: 0 3px 0 #E6DCC6; color: #24324A; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer">After the slab is poured</button>
+<button class="press" onClick="{{ansB}}" style="min-height: 48px; text-align: left; padding: 0 14px; border: 2px solid #E6DCC6; border-radius: 14px; background: #FFFFFF; box-shadow: 0 3px 0 #E6DCC6; color: #24324A; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer">Before the concrete is poured</button>
+<button class="press" onClick="{{ansC}}" style="min-height: 48px; text-align: left; padding: 0 14px; border: 2px solid #E6DCC6; border-radius: 14px; background: #FFFFFF; box-shadow: 0 3px 0 #E6DCC6; color: #24324A; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer">At the monthly progress claim</button>
+<sc-if value="{{wrong}}" hint-placeholder-val="{{false}}"><span style="font-size: 14px; font-weight: 800; color: #C2410C">Not quite. Think about when it can still be fixed.</span></sc-if>
+</div>
+</sc-if>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 20px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; margin-top: auto">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px">
+<span style="font-size: 16px; font-weight: 900">Scaffold safety session</span>
+<span style="font-size: 12px; font-weight: 800; color: #5A6478">Thu 7:30 am</span>
+</div>
+<span style="font-size: 13px; font-weight: 700; color: #5A6478">Trainer: [TRAINER] · assigned by [SITE MANAGER]</span>
+<sc-if value="{{sIdle}}" hint-placeholder-val="{{true}}">
+<button class="press" onClick="{{checkIn}}" style="min-height: 48px; border: 0; border-radius: 14px; background: #2BB3A3; box-shadow: 0 4px 0 #17766C; color: #FFFFFF; font-family: inherit; font-size: 15px; font-weight: 900; letter-spacing: 0.04em; cursor: pointer">CHECK IN · SCAN QR</button>
+</sc-if>
+<sc-if value="{{sScan}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="width: 64px; height: 64px; position: relative; border: 3px solid #24324A; border-radius: 12px; background: #F6EEDD"><div class="scanline"></div></div>
+<span style="font-size: 14px; font-weight: 800">Point at the trainer’s QR code…</span>
+</div>
+</sc-if>
+<sc-if value="{{sIn}}" hint-placeholder-val="{{false}}">
+<div class="pop" style="display: flex; align-items: center; gap: 10px; background: #FFF1C7; border-radius: 14px; padding: 10px 12px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#24324A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9"></path></svg>
+<span style="font-size: 14px; font-weight: 800">Checked in. Waiting for trainer sign-off</span>
+</div>
+</sc-if>
+<sc-if value="{{sSigned}}" hint-placeholder-val="{{false}}">
+<div class="pop" style="display: flex; align-items: center; gap: 10px; background: #E3F5F2; border-radius: 14px; padding: 10px 12px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#17766C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+<span style="font-size: 14px; font-weight: 800; color: #17766C">Signed off by [TRAINER] · competent · +30 XP</span>
+</div>
+</sc-if>
+</div>
+
+</div>
+
+<nav style="background: #FFFFFF; border-top: 2px solid #F1E6CF; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px 8px 14px">
+<a href="Main.dc.html" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: #5A6478; font-size: 12px; font-weight: 700">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path></svg>Today</a>
+<a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: #24324A; font-size: 12px; font-weight: 900">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="#FFC93C" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4z"></path><path d="M7 9v5c3 2 7 2 10 0V9" fill="none"></path></svg>Learn</a>
+<a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: #5A6478; font-size: 12px; font-weight: 700">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"></path></svg>League</a>
+<a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: #5A6478; font-size: 12px; font-weight: 700">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Me</a>
+</nav>
+
+<sc-if value="{{celebrate}}" hint-placeholder-val="{{false}}">
+<div class="confetti" aria-hidden="true">
+<span style="left: 6%; background: #FFC93C; animation-delay: 0s"></span>
+<span style="left: 16%; background: #2BB3A3; animation-delay: 0.15s"></span>
+<span style="left: 26%; background: #FF7A59; animation-delay: 0.05s"></span>
+<span style="left: 36%; background: #5BA7E8; animation-delay: 0.25s"></span>
+<span style="left: 46%; background: #FFC93C; animation-delay: 0.1s"></span>
+<span style="left: 56%; background: #FF7A59; animation-delay: 0.3s"></span>
+<span style="left: 66%; background: #2BB3A3; animation-delay: 0s"></span>
+<span style="left: 76%; background: #FFC93C; animation-delay: 0.2s"></span>
+<span style="left: 86%; background: #5BA7E8; animation-delay: 0.08s"></span>
+<span style="left: 94%; background: #FF7A59; animation-delay: 0.28s"></span>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 'path', vid: 0, wrong: false, shake: false, session: 'idle', xp: 1240, celebrate: false, cheer: false, gain: '', msg: 'Your site manager set you a lesson. Learn something new, earn XP!' };
+  }
+  componentWillUnmount() { clearInterval(this.vt); clearInterval(this.xt); clearTimeout(this.ft); clearTimeout(this.st); clearTimeout(this.st2); }
+  addXp(n, msg) {
+    const start = this.state.xp, end = start + n, t0 = Date.now();
+    this.setState({ celebrate: true, cheer: true, gain: '+' + n + ' XP', msg: msg });
+    clearInterval(this.xt);
+    this.xt = setInterval(() => { const p = Math.min(1, (Date.now() - t0) / 700); this.setState({ xp: Math.round(start + (end - start) * p) }); if (p >= 1) clearInterval(this.xt); }, 30);
+    clearTimeout(this.ft); this.ft = setTimeout(() => this.setState({ celebrate: false, cheer: false }), 1700);
+  }
+  startVideo() {
+    this.setState({ step: 'video', vid: 0, msg: 'Watch closely. There’s a quiz at the end!' });
+    const t0 = Date.now(); clearInterval(this.vt);
+    this.vt = setInterval(() => { const p = Math.min(100, (Date.now() - t0) / 30); this.setState({ vid: p }); if (p >= 100) clearInterval(this.vt); }, 40);
+  }
+  answer(ok) {
+    if (ok) { this.setState({ step: 'passed', wrong: false }); this.addXp(40, 'Nailed it! Hold-point inspection passed. NCR writing is unlocked.'); }
+    else { this.setState({ wrong: true, shake: true, msg: 'Close! Have another go.' }); clearTimeout(this.sh); this.sh = setTimeout(() => this.setState({ shake: false }), 450); }
+  }
+  checkIn() {
+    if (this.state.session !== 'idle') return;
+    this.setState({ session: 'scan', msg: 'Scan the QR code on your trainer’s phone.' });
+    this.st = setTimeout(() => {
+      this.setState({ session: 'in', msg: 'You’re checked in. Your trainer signs you off after the practical.' });
+      this.st2 = setTimeout(() => { this.setState({ session: 'signed' }); this.addXp(30, 'Your trainer signed you off as competent. Great work!'); }, 2600);
+    }, 1600);
+  }
+  renderVals() {
+    const s = this.state, passed = s.step === 'passed';
+    return {
+      xpText: s.xp.toLocaleString('en-US'), msg: s.msg, gain: s.gain, celebrate: s.celebrate,
+      brixClass: s.cheer ? 'brix-cheer' : 'brix',
+      mouthD: s.cheer ? 'M46 84q14 18 28 0z' : 'M50 86q10 10 20 0',
+      mouthFill: s.cheer ? '#24324A' : 'none',
+      showPath: s.step === 'path' || passed, showVideo: s.step === 'video', showQuiz: s.step === 'quiz',
+      lessonOpen: !passed, lessonDone: passed, ncrLocked: !passed, ncrOpen: passed,
+      vidPct: Math.round(s.vid), vidPlaying: s.vid < 100, vidDone: s.vid >= 100,
+      wrong: s.wrong, quizClass: s.shake ? 'shake' : '',
+      sIdle: s.session === 'idle', sScan: s.session === 'scan', sIn: s.session === 'in', sSigned: s.session === 'signed',
+      startVideo: () => this.startVideo(),
+      toQuiz: () => this.setState({ step: 'quiz', msg: 'One question. You’ve got this.' }),
+      ansA: () => this.answer(false), ansB: () => this.answer(true), ansC: () => this.answer(false),
+      checkIn: () => this.checkIn()
+    };
+  }
+}
+</script>
+</body>
+</html>

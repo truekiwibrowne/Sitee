@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cross-site review</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#24324A}a:hover{color:#000}
+@keyframes cheer{0%{transform:translateY(0) rotate(0)}30%{transform:translateY(-20px) rotate(-8deg)}60%{transform:translateY(0) rotate(6deg)}100%{transform:translateY(0) rotate(0)}}
+.brix-cheer{animation:cheer 0.7s ease-out 3}
+@keyframes pop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+.pop{animation:pop 0.45s ease-out both}
+@keyframes starpop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+.star-on{animation:starpop 0.3s ease-out}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.fade{animation:fade 0.25s ease-out both}
+@keyframes fall{0%{transform:translateY(-30px) rotate(0);opacity:1}100%{transform:translateY(880px) rotate(600deg);opacity:0.2}}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.confetti span{position:absolute;top:0;width:10px;height:14px;border-radius:3px;animation:fall 1.7s ease-in forwards}
+.press{transition:transform 0.08s}
+.press:active{transform:translateY(4px)}
+@media (prefers-reduced-motion: reduce){.brix-cheer,.pop,.star-on,.fade,.confetti span{animation:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; background: #FFF7E8; color: #24324A; font-family: 'Nunito', system-ui, sans-serif; display: flex; flex-direction: column; gap: 12px; padding: 18px 20px 20px; overflow: hidden">
+
+<div style="display: flex; align-items: center; gap: 10px">
+<a href="SiteManager.dc.html" aria-label="Back to today" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: #FFFFFF; border: 2px solid #F1E6CF; color: #24324A">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+</a>
+<div style="display: flex; flex-direction: column">
+<span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #5A6478">Closes in 18 hrs · +40 XP</span>
+<h1 style="margin: 0; font-size: 24px; font-weight: 900; line-height: 1.1">Cross-site review</h1>
+</div>
+</div>
+
+<div style="background: #24324A; color: #FFFFFF; border-radius: 18px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 16px; font-weight: 900">Foreman daily report · [SITE B]</span>
+<span style="font-size: 13px; font-weight: 700; color: #D7DEE8">Mon 2 Nov · author hidden until you submit</span>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 20px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #5A6478">Completeness · 5 of 6</span>
+<div style="display: flex; align-items: center; gap: 10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17766C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg><span style="flex: 1; font-size: 14px; font-weight: 700">Weather and conditions</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17766C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg><span style="flex: 1; font-size: 14px; font-weight: 700">Labour on site</span><span style="font-size: 13px; font-weight: 800; color: #5A6478">14</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17766C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg><span style="flex: 1; font-size: 14px; font-weight: 700">Work done today</span><span style="font-size: 13px; font-weight: 800; color: #5A6478">3 items</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17766C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg><span style="flex: 1; font-size: 14px; font-weight: 700">Photos with time and GPS</span><span style="font-size: 13px; font-weight: 800; color: #5A6478">4 of 4</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17766C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg><span style="flex: 1; font-size: 14px; font-weight: 700">Tomorrow’s plan</span></div>
+<div style="display: flex; align-items: center; gap: 10px; background: #FFF1C7; border-radius: 10px; padding: 6px 8px; margin: 0 -8px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A4B00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20zM12 10v4M12 17h.01"></path></svg>
+<span style="flex: 1; font-size: 14px; font-weight: 800">Delay logged, no cause given</span>
+</div>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 20px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 15px; font-weight: 800">Do the photos match the work?</span>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<button class="press" onClick="{{pickYes}}" aria-pressed="{{yesPressed}}" style="min-height: 44px; border: 2px solid {{yesBorder}}; border-radius: 14px; background: {{yesBg}}; color: {{yesColor}}; font-family: inherit; font-size: 14px; font-weight: 900; cursor: pointer">Yes</button>
+<button class="press" onClick="{{pickUnsure}}" aria-pressed="{{unsurePressed}}" style="min-height: 44px; border: 2px solid {{unsureBorder}}; border-radius: 14px; background: {{unsureBg}}; color: {{unsureColor}}; font-family: inherit; font-size: 14px; font-weight: 900; cursor: pointer">Unsure</button>
+<button class="press" onClick="{{pickNo}}" aria-pressed="{{noPressed}}" style="min-height: 44px; border: 2px solid {{noBorder}}; border-radius: 14px; background: {{noBg}}; color: {{noColor}}; font-family: inherit; font-size: 14px; font-weight: 900; cursor: pointer">No</button>
+</div>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 20px; padding: 8px 14px; display: flex; align-items: center; gap: 4px">
+<span style="flex: 1; font-size: 15px; font-weight: 800">Your rating</span>
+<button onClick="{{star1}}" aria-label="1 star" style="width: 48px; height: 48px; border: 0; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg class="{{c1}}" width="34" height="34" viewBox="0 0 24 24" fill="{{f1}}" stroke="#8A4B00" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"></path></svg></button>
+<button onClick="{{star2}}" aria-label="2 stars" style="width: 48px; height: 48px; border: 0; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg class="{{c2}}" width="34" height="34" viewBox="0 0 24 24" fill="{{f2}}" stroke="#8A4B00" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"></path></svg></button>
+<button onClick="{{star3}}" aria-label="3 stars" style="width: 48px; height: 48px; border: 0; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg class="{{c3}}" width="34" height="34" viewBox="0 0 24 24" fill="{{f3}}" stroke="#8A4B00" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"></path></svg></button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rv-comment" style="font-size: 14px; font-weight: 800">Feedback for the foreman</label>
+<textarea id="rv-comment" rows="2" style="box-sizing: border-box; width: 100%; border: 2px solid #E6DCC6; border-radius: 14px; padding: 10px 12px; font-family: inherit; font-size: 14px; font-weight: 600; color: #24324A; background: #FFFFFF; resize: none">Great photos. Add the cause for the 2-hr delay so it can back an extension claim.</textarea>
+</div>
+
+<button class="press" onClick="{{submit}}" style="min-height: 54px; margin-top: auto; border: 0; border-radius: 16px; background: #FFC93C; box-shadow: 0 4px 0 #D69E00; color: #24324A; font-family: inherit; font-size: 16px; font-weight: 900; letter-spacing: 0.04em; cursor: pointer">SUBMIT REVIEW · +40 XP</button>
+
+<sc-if value="{{submitted}}" hint-placeholder-val="{{false}}">
+<div class="fade" style="position: absolute; inset: 0; background: rgba(36,50,74,0.55); display: flex; align-items: flex-end">
+<div class="pop" style="width: 100%; box-sizing: border-box; background: #FFF7E8; border-radius: 28px 28px 0 0; padding: 24px 20px 28px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+<svg class="brix-cheer" width="110" height="110" viewBox="0 0 120 120" role="img" aria-label="Brix cheering">
+<rect x="22" y="44" width="76" height="62" rx="20" fill="#FF8C5A" stroke="#24324A" stroke-width="4"></rect>
+<path d="M24 50a36 30 0 0 1 72 0z" fill="#FFC93C" stroke="#24324A" stroke-width="4" stroke-linejoin="round"></path>
+<rect x="14" y="46" width="92" height="10" rx="5" fill="#FFC93C" stroke="#24324A" stroke-width="4"></rect>
+<path d="M60 22v24" stroke="#24324A" stroke-width="4" stroke-linecap="round"></path>
+<circle cx="46" cy="72" r="9" fill="#FFFFFF" stroke="#24324A" stroke-width="3"></circle>
+<circle cx="74" cy="72" r="9" fill="#FFFFFF" stroke="#24324A" stroke-width="3"></circle>
+<circle cx="48" cy="73" r="4.5" fill="#24324A"></circle>
+<circle cx="76" cy="73" r="4.5" fill="#24324A"></circle>
+<path d="M46 84q14 18 28 0z" fill="#24324A" stroke="#24324A" stroke-width="4" stroke-linejoin="round"></path>
+</svg>
+<span style="font-size: 26px; font-weight: 900">Review sent!</span>
+<span style="font-size: 18px; font-weight: 900; color: #17766C">+40 XP</span>
+<span style="font-size: 14px; font-weight: 700; color: #5A6478; line-height: 1.4">You rated it {{stars}} of 3 stars. The PM may spot-check your review for accuracy.</span>
+<a class="press" href="SiteManager.dc.html" style="min-height: 52px; width: 100%; display: flex; align-items: center; justify-content: center; border-radius: 16px; background: #2BB3A3; box-shadow: 0 4px 0 #17766C; color: #FFFFFF; font-size: 16px; font-weight: 900; letter-spacing: 0.04em; text-decoration: none">BACK TO TODAY</a>
+</div>
+<div class="confetti" aria-hidden="true">
+<span style="left: 8%; background: #FFC93C; animation-delay: 0s"></span>
+<span style="left: 20%; background: #2BB3A3; animation-delay: 0.15s"></span>
+<span style="left: 32%; background: #FF7A59; animation-delay: 0.05s"></span>
+<span style="left: 44%; background: #5BA7E8; animation-delay: 0.25s"></span>
+<span style="left: 56%; background: #FFC93C; animation-delay: 0.1s"></span>
+<span style="left: 68%; background: #FF7A59; animation-delay: 0.3s"></span>
+<span style="left: 80%; background: #2BB3A3; animation-delay: 0s"></span>
+<span style="left: 92%; background: #FFC93C; animation-delay: 0.2s"></span>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { stars: 2, match: 'yes', submitted: false, popStar: 0 };
+  }
+  renderVals() {
+    const s = this.state;
+    const on = '#FFC93C', off = 'none';
+    const opt = (k) => s.match === k
+      ? { bg: '#24324A', border: '#24324A', color: '#FFFFFF', pressed: 'true' }
+      : { bg: '#FFFFFF', border: '#E6DCC6', color: '#24324A', pressed: 'false' };
+    const y = opt('yes'), u = opt('unsure'), n = opt('no');
+    const setStars = (k) => this.setState({ stars: k, popStar: k });
+    return {
+      stars: s.stars, submitted: s.submitted,
+      f1: s.stars >= 1 ? on : off, f2: s.stars >= 2 ? on : off, f3: s.stars >= 3 ? on : off,
+      c1: s.popStar === 1 ? 'star-on' : '', c2: s.popStar === 2 ? 'star-on' : '', c3: s.popStar === 3 ? 'star-on' : '',
+      star1: () => setStars(1), star2: () => setStars(2), star3: () => setStars(3),
+      yesBg: y.bg, yesBorder: y.border, yesColor: y.color, yesPressed: y.pressed,
+      unsureBg: u.bg, unsureBorder: u.border, unsureColor: u.color, unsurePressed: u.pressed,
+      noBg: n.bg, noBorder: n.border, noColor: n.color, noPressed: n.pressed,
+      pickYes: () => this.setState({ match: 'yes' }), pickUnsure: () => this.setState({ match: 'unsure' }), pickNo: () => this.setState({ match: 'no' }),
+      submit: () => this.setState({ submitted: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

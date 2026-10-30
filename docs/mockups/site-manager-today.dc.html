@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Site Manager – Today</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#24324A}a:hover{color:#000}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.brix{animation:bob 2.6s ease-in-out infinite}
+@keyframes cheer{0%{transform:translateY(0) rotate(0)}30%{transform:translateY(-20px) rotate(-8deg)}60%{transform:translateY(0) rotate(6deg)}100%{transform:translateY(0) rotate(0)}}
+.brix-cheer{animation:cheer 0.7s ease-out 2}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,201,60,0.75)}70%{box-shadow:0 0 0 14px rgba(255,201,60,0)}100%{box-shadow:0 0 0 0 rgba(255,201,60,0)}}
+.pulse{animation:pulse 1.8s ease-out infinite}
+@keyframes pop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+.pop{animation:pop 0.45s ease-out both}
+@keyframes fall{0%{transform:translateY(-30px) rotate(0);opacity:1}100%{transform:translateY(880px) rotate(600deg);opacity:0.2}}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.confetti span{position:absolute;top:0;width:10px;height:14px;border-radius:3px;animation:fall 1.7s ease-in forwards}
+.press{transition:transform 0.08s}
+.press:active{transform:translateY(4px)}
+@media (prefers-reduced-motion: reduce){.brix,.brix-cheer,.pulse,.pop,.confetti span{animation:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; background: #FFF7E8; color: #24324A; font-family: 'Nunito', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 20px 20px 8px">
+
+<div style="display: flex; gap: 8px; justify-content: space-between">
+<span style="display: flex; align-items: center; gap: 6px; background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 999px; padding: 6px 12px; font-weight: 900; font-size: 16px; color: #C2410C">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="#FF7A59" stroke="#C2410C" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 0-8z"></path></svg>21</span>
+<span style="display: flex; align-items: center; gap: 6px; background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 999px; padding: 6px 12px; font-weight: 900; font-size: 16px; color: #17766C">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="#2BB3A3" stroke="#17766C" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"></path></svg>{{xpText}}</span>
+<span style="display: flex; align-items: center; gap: 6px; background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 999px; padding: 6px 12px; font-weight: 900; font-size: 16px; color: #24324A">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#24324A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3" fill="#FFC93C"></circle></svg>92%</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; position: relative">
+<svg class="{{brixClass}}" width="80" height="80" viewBox="0 0 120 120" role="img" aria-label="Brix, the hard-hat mascot">
+<rect x="22" y="44" width="76" height="62" rx="20" fill="#FF8C5A" stroke="#24324A" stroke-width="4"></rect>
+<path d="M24 50a36 30 0 0 1 72 0z" fill="#FFC93C" stroke="#24324A" stroke-width="4" stroke-linejoin="round"></path>
+<rect x="14" y="46" width="92" height="10" rx="5" fill="#FFC93C" stroke="#24324A" stroke-width="4"></rect>
+<path d="M60 22v24" stroke="#24324A" stroke-width="4" stroke-linecap="round"></path>
+<circle cx="46" cy="72" r="9" fill="#FFFFFF" stroke="#24324A" stroke-width="3"></circle>
+<circle cx="74" cy="72" r="9" fill="#FFFFFF" stroke="#24324A" stroke-width="3"></circle>
+<circle cx="48" cy="73" r="4.5" fill="#24324A"></circle>
+<circle cx="76" cy="73" r="4.5" fill="#24324A"></circle>
+<path d="{{mouthD}}" fill="{{mouthFill}}" stroke="#24324A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<div style="flex: 1; background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 18px; padding: 10px 12px; font-size: 14px; font-weight: 700; line-height: 1.35">{{msg}}</div>
+<sc-if value="{{celebrate}}" hint-placeholder-val="{{false}}">
+<span class="pop" style="position: absolute; left: 44px; top: -8px; background: #2BB3A3; color: #FFFFFF; font-weight: 900; font-size: 15px; padding: 4px 10px; border-radius: 999px; box-shadow: 0 3px 0 #17766C">{{gain}}</span>
+</sc-if>
+</div>
+
+<span style="font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #5A6478">Today · [SITE NAME]</span>
+
+<div class="pulse" style="border-radius: 18px">
+<div style="background: #FFFFFF; border: 3px solid #FFC93C; border-radius: 18px; padding: 10px 12px; display: flex; align-items: center; gap: 12px">
+<div style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: #FFC93C; box-shadow: 0 4px 0 #D69E00; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#24324A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800">Cross-site review</span><span style="font-size: 12px; font-weight: 700; color: #5A6478">Closes in 18 hrs · +40 XP</span></div>
+<a class="press" href="CrossSiteReview.dc.html" style="min-height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 14px; background: #24324A; box-shadow: 0 4px 0 #0F1726; color: #FFFFFF; font-size: 13px; font-weight: 900; letter-spacing: 0.06em; text-decoration: none">REVIEW</a>
+</div>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 18px; padding: 10px 12px; display: flex; align-items: center; gap: 12px">
+<sc-if value="{{apprOpen}}" hint-placeholder-val="{{true}}">
+<div style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: #FF7A59; box-shadow: 0 4px 0 #C2410C; display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-size: 18px; font-weight: 900">{{approvals}}</div>
+<div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800">Approve foreman reports</span><span style="font-size: 12px; font-weight: 700; color: #5A6478">{{approvals}} waiting · +20 XP each</span></div>
+<button class="press" onClick="{{approve}}" style="min-height: 44px; padding: 0 14px; border: 0; border-radius: 14px; background: #FFC93C; box-shadow: 0 4px 0 #D69E00; color: #24324A; font-family: inherit; font-size: 13px; font-weight: 900; letter-spacing: 0.06em; cursor: pointer">APPROVE</button>
+</sc-if>
+<sc-if value="{{apprDone}}" hint-placeholder-val="{{false}}">
+<div class="pop" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: #2BB3A3; box-shadow: 0 4px 0 #17766C; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800">Foreman reports approved</span><span style="font-size: 12px; font-weight: 700; color: #17766C">All done · +40 XP</span></div>
+</sc-if>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 18px; padding: 10px 12px; display: flex; align-items: center; gap: 12px">
+<sc-if value="{{ncrOpen}}" hint-placeholder-val="{{true}}">
+<div style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: #FF7A59; box-shadow: 0 4px 0 #C2410C; display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-size: 18px; font-weight: 900">{{ncr}}</div>
+<div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800">Open NCRs</span><span style="font-size: 12px; font-weight: 700; color: #5A6478">+15 XP per close-out</span></div>
+<button class="press" onClick="{{closeNcr}}" style="min-height: 44px; padding: 0 14px; border: 0; border-radius: 14px; background: #FFC93C; box-shadow: 0 4px 0 #D69E00; color: #24324A; font-family: inherit; font-size: 13px; font-weight: 900; letter-spacing: 0.06em; cursor: pointer">CLOSE ONE</button>
+</sc-if>
+<sc-if value="{{ncrDone}}" hint-placeholder-val="{{false}}">
+<div class="pop" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: #2BB3A3; box-shadow: 0 4px 0 #17766C; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800">No open NCRs</span><span style="font-size: 12px; font-weight: 700; color: #17766C">Site health up · +45 XP</span></div>
+</sc-if>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 18px; padding: 10px 12px; display: flex; align-items: center; gap: 12px">
+<div style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: #E3F5F2; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#17766C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4z"></path><path d="M7 9v5c3 2 7 2 10 0V9"></path></svg>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800">Assign training</span><span style="font-size: 12px; font-weight: 700; color: #5A6478">2 foremen have no lesson this week</span></div>
+<a class="press" href="AssignTask.dc.html" style="min-height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 14px; background: #FFFFFF; border: 2px solid #E6DCC6; box-shadow: 0 4px 0 #E6DCC6; color: #24324A; font-size: 13px; font-weight: 900; letter-spacing: 0.06em; text-decoration: none">ASSIGN</a>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 18px; padding: 10px 12px; display: flex; align-items: center; gap: 12px">
+<div style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: #E6E1D6; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5A6478" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 800">Progress and materials</span><span style="font-size: 12px; font-weight: 700; color: #5A6478">Opens at 3 pm · +30 XP</span></div>
+</div>
+
+</div>
+
+<nav style="background: #FFFFFF; border-top: 2px solid #F1E6CF; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px 8px 14px">
+<a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: #24324A; font-size: 12px; font-weight: 900">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="#FFC93C" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path></svg>Today</a>
+<a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: #5A6478; font-size: 12px; font-weight: 700">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2 20a7 7 0 0 1 14 0M16 4.5a3.5 3.5 0 0 1 0 7M18 13.5a7 7 0 0 1 4 6.5"></path></svg>Team</a>
+<a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: #5A6478; font-size: 12px; font-weight: 700">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"></path></svg>League</a>
+<a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: #5A6478; font-size: 12px; font-weight: 700">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Me</a>
+</nav>
+
+<sc-if value="{{celebrate}}" hint-placeholder-val="{{false}}">
+<div class="confetti" aria-hidden="true">
+<span style="left: 8%; background: #FFC93C; animation-delay: 0s"></span>
+<span style="left: 20%; background: #2BB3A3; animation-delay: 0.15s"></span>
+<span style="left: 32%; background: #FF7A59; animation-delay: 0.05s"></span>
+<span style="left: 44%; background: #5BA7E8; animation-delay: 0.25s"></span>
+<span style="left: 56%; background: #FFC93C; animation-delay: 0.1s"></span>
+<span style="left: 68%; background: #FF7A59; animation-delay: 0.3s"></span>
+<span style="left: 80%; background: #2BB3A3; animation-delay: 0s"></span>
+<span style="left: 92%; background: #FFC93C; animation-delay: 0.2s"></span>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { approvals: 2, ncr: 3, xp: 2310, celebrate: false, cheer: false, gain: '', msg: 'Morning, [NAME]! A foreman report from another site needs your eyes.' };
+  }
+  componentWillUnmount() { clearInterval(this.xt); clearTimeout(this.ft); }
+  addXp(n, msg) {
+    const start = this.state.xp, end = start + n, t0 = Date.now();
+    this.setState({ celebrate: true, cheer: true, gain: '+' + n + ' XP', msg: msg });
+    clearInterval(this.xt);
+    this.xt = setInterval(() => { const p = Math.min(1, (Date.now() - t0) / 700); this.setState({ xp: Math.round(start + (end - start) * p) }); if (p >= 1) clearInterval(this.xt); }, 30);
+    clearTimeout(this.ft); this.ft = setTimeout(() => this.setState({ celebrate: false, cheer: false }), 1700);
+  }
+  approve() {
+    if (this.state.approvals <= 0) return;
+    const left = this.state.approvals - 1;
+    this.setState({ approvals: left });
+    this.addXp(20, left ? 'Approved! One more to go.' : 'All foreman reports approved. Their XP is unlocked too!');
+  }
+  closeNcr() {
+    if (this.state.ncr <= 0) return;
+    const left = this.state.ncr - 1;
+    this.setState({ ncr: left });
+    this.addXp(15, left ? 'NCR closed. ' + left + ' left.' : 'Zero open NCRs. Site health is climbing!');
+  }
+  renderVals() {
+    const s = this.state;
+    return {
+      xpText: s.xp.toLocaleString('en-US'), msg: s.msg, gain: s.gain, celebrate: s.celebrate,
+      brixClass: s.cheer ? 'brix-cheer' : 'brix',
+      mouthD: s.cheer ? 'M46 84q14 18 28 0z' : 'M50 86q10 10 20 0',
+      mouthFill: s.cheer ? '#24324A' : 'none',
+      approvals: s.approvals, apprOpen: s.approvals > 0, apprDone: s.approvals === 0,
+      ncr: s.ncr, ncrOpen: s.ncr > 0, ncrDone: s.ncr === 0,
+      approve: () => this.approve(), closeNcr: () => this.closeNcr()
+    };
+  }
+}
+</script>
+</body>
+</html>

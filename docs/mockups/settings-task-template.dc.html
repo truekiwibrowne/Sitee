@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings – task template</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#24324A}a:hover{color:#000}
+</style>
+</helmet>
+<div style="width: 390px; height: 900px; box-sizing: border-box; background: #FFF7E8; color: #24324A; font-family: 'Nunito', system-ui, sans-serif; display: flex; flex-direction: column; gap: 12px; padding: 18px 20px 20px; overflow: hidden">
+
+<div style="display: flex; align-items: center; gap: 10px">
+<a href="#" aria-label="Back to settings" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: #FFFFFF; border: 2px solid #F1E6CF; color: #24324A">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+</a>
+<div style="display: flex; flex-direction: column">
+<span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #5A6478">Task template</span>
+<h1 style="margin: 0; font-size: 24px; font-weight: 900; line-height: 1.1">Daily site report</h1>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; background: #FFF1C7; border-radius: 16px; padding: 8px 12px">
+<svg width="44" height="44" viewBox="0 0 120 120" aria-hidden="true">
+<rect x="22" y="44" width="76" height="62" rx="20" fill="#FF8C5A" stroke="#24324A" stroke-width="5"></rect>
+<path d="M24 50a36 30 0 0 1 72 0z" fill="#FFC93C" stroke="#24324A" stroke-width="5" stroke-linejoin="round"></path>
+<rect x="14" y="46" width="92" height="10" rx="5" fill="#FFC93C" stroke="#24324A" stroke-width="5"></rect>
+<circle cx="46" cy="72" r="9" fill="#FFFFFF" stroke="#24324A" stroke-width="4"></circle>
+<circle cx="74" cy="72" r="9" fill="#FFFFFF" stroke="#24324A" stroke-width="4"></circle>
+<circle cx="48" cy="73" r="4.5" fill="#24324A"></circle>
+<circle cx="76" cy="73" r="4.5" fill="#24324A"></circle>
+<path d="M50 86q10 10 20 0" fill="none" stroke="#24324A" stroke-width="5" stroke-linecap="round"></path>
+</svg>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.35">Only tick what you really need. Aim for under 5 minutes on site.</span>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 20px; padding: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="tt-role" style="font-size: 13px; font-weight: 800; color: #5A6478">Role</label>
+<select id="tt-role" style="min-height: 44px; border: 2px solid #E6DCC6; border-radius: 12px; padding: 0 10px; font-family: inherit; font-size: 15px; font-weight: 700; color: #24324A; background: #FFFFFF"><option>Foreman</option><option>Site manager</option><option>Project manager</option></select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="tt-freq" style="font-size: 13px; font-weight: 800; color: #5A6478">How often</label>
+<select id="tt-freq" style="min-height: 44px; border: 2px solid #E6DCC6; border-radius: 12px; padding: 0 10px; font-family: inherit; font-size: 15px; font-weight: 700; color: #24324A; background: #FFFFFF"><option>Every work day</option><option>Weekly</option><option>Per hold point</option></select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="tt-due" style="font-size: 13px; font-weight: 800; color: #5A6478">Due by</label>
+<input id="tt-due" type="time" value="18:00" style="min-height: 44px; box-sizing: border-box; border: 2px solid #E6DCC6; border-radius: 12px; padding: 0 10px; font-family: inherit; font-size: 15px; font-weight: 700; color: #24324A">
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="tt-xp" style="font-size: 13px; font-weight: 800; color: #5A6478">XP reward</label>
+<input id="tt-xp" type="number" value="50" style="min-height: 44px; box-sizing: border-box; border: 2px solid #E6DCC6; border-radius: 12px; padding: 0 10px; font-family: inherit; font-size: 15px; font-weight: 700; color: #24324A">
+</div>
+<div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px">
+<label for="tt-review" style="font-size: 13px; font-weight: 800; color: #5A6478">Reviewed by</label>
+<select id="tt-review" style="min-height: 44px; border: 2px solid #E6DCC6; border-radius: 12px; padding: 0 10px; font-family: inherit; font-size: 15px; font-weight: 700; color: #24324A; background: #FFFFFF"><option>Own site manager, plus 1 cross-site review</option><option>Own site manager only</option><option>No review</option></select>
+</div>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; justify-content: space-between; padding-bottom: 4px">
+<span style="font-size: 16px; font-weight: 900">What goes in the report</span>
+<span style="font-size: 12px; font-weight: 800; color: #5A6478">Required</span>
+</div>
+
+<div style="min-height: 44px; display: flex; align-items: center; gap: 10px; border-top: 2px solid #F6EEDD">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A927F" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"></path></svg>
+<span style="flex: 1; font-size: 15px; font-weight: 700">Weather</span>
+<span style="font-size: 12px; font-weight: 800; background: #E3F5F2; color: #17766C; border-radius: 999px; padding: 3px 9px">Pick list</span>
+<input type="checkbox" checked aria-label="Weather required" style="width: 24px; height: 24px; accent-color: #2BB3A3">
+</div>
+<div style="min-height: 44px; display: flex; align-items: center; gap: 10px; border-top: 2px solid #F6EEDD">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A927F" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"></path></svg>
+<span style="flex: 1; font-size: 15px; font-weight: 700">Labour on site</span>
+<span style="font-size: 12px; font-weight: 800; background: #E3F5F2; color: #17766C; border-radius: 999px; padding: 3px 9px">Number</span>
+<input type="checkbox" checked aria-label="Labour on site required" style="width: 24px; height: 24px; accent-color: #2BB3A3">
+</div>
+<div style="min-height: 44px; display: flex; align-items: center; gap: 10px; border-top: 2px solid #F6EEDD">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A927F" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"></path></svg>
+<span style="flex: 1; font-size: 15px; font-weight: 700">Quantities installed</span>
+<span style="font-size: 12px; font-weight: 800; background: #E3F5F2; color: #17766C; border-radius: 999px; padding: 3px 9px">BoQ items</span>
+<input type="checkbox" checked aria-label="Quantities installed required" style="width: 24px; height: 24px; accent-color: #2BB3A3">
+</div>
+<div style="min-height: 44px; display: flex; align-items: center; gap: 10px; border-top: 2px solid #F6EEDD">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A927F" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"></path></svg>
+<span style="flex: 1; font-size: 15px; font-weight: 700">Site photos (min 3, GPS)</span>
+<span style="font-size: 12px; font-weight: 800; background: #E3F5F2; color: #17766C; border-radius: 999px; padding: 3px 9px">Photo</span>
+<input type="checkbox" checked aria-label="Site photos required" style="width: 24px; height: 24px; accent-color: #2BB3A3">
+</div>
+<div style="min-height: 44px; display: flex; align-items: center; gap: 10px; border-top: 2px solid #F6EEDD">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A927F" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"></path></svg>
+<span style="flex: 1; font-size: 15px; font-weight: 700">Delays and cause</span>
+<span style="font-size: 12px; font-weight: 800; background: #E3F5F2; color: #17766C; border-radius: 999px; padding: 3px 9px">Text</span>
+<input type="checkbox" aria-label="Delays and cause required" style="width: 24px; height: 24px; accent-color: #2BB3A3">
+</div>
+<div style="min-height: 44px; display: flex; align-items: center; gap: 10px; border-top: 2px solid #F6EEDD">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A927F" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"></path></svg>
+<span style="flex: 1; font-size: 15px; font-weight: 700">Tomorrow's plan</span>
+<span style="font-size: 12px; font-weight: 800; background: #E3F5F2; color: #17766C; border-radius: 999px; padding: 3px 9px">Text</span>
+<input type="checkbox" checked aria-label="Tomorrow's plan required" style="width: 24px; height: 24px; accent-color: #2BB3A3">
+</div>
+
+<button style="min-height: 44px; margin-top: 6px; border: 2px dashed #CFC4AC; border-radius: 14px; background: transparent; color: #24324A; font-family: inherit; font-size: 15px; font-weight: 800">+ Add a field</button>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: auto">
+<a href="Dependencies.dc.html" style="min-height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 16px; background: #FFFFFF; border: 2px solid #E6DCC6; box-shadow: 0 4px 0 #E6DCC6; color: #24324A; font-size: 15px; font-weight: 900; text-decoration: none">Unlock rules</a>
+<button style="min-height: 52px; border: 0; border-radius: 16px; background: #FFC93C; box-shadow: 0 4px 0 #D69E00; color: #24324A; font-family: inherit; font-size: 15px; font-weight: 900; letter-spacing: 0.04em">SAVE</button>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

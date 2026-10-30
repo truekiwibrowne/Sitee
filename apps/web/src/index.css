@@ -1,0 +1,65 @@
+@import 'tailwindcss';
+
+/* Brand palette only: Tailwind's default colours are switched off so screens stay on-token. */
+@theme {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-transparent: transparent;
+
+  --color-cream: #fff7e8; /* page background */
+  --color-card-line: #f1e6cf; /* card and chip borders */
+  --color-ink: #24324a;
+  --color-ink-shadow: #0f1726;
+  --color-muted: #5a6478;
+
+  --color-yellow: #ffc93c; /* primary / current task */
+  --color-yellow-shadow: #d69e00;
+  --color-teal: #2bb3a3; /* done */
+  --color-teal-shadow: #17766c;
+  --color-coral: #ff7a59; /* QC / streak */
+  --color-coral-shadow: #c2410c;
+  --color-locked: #e6e1d6;
+  --color-locked-shadow: #c9c2b3;
+  --color-locked-ink: #7a7364;
+
+  --font-sans: 'Nunito', system-ui, sans-serif;
+
+  --radius-btn: 14px;
+  --radius-card: 18px;
+
+  /* Chunky 4px bottom edge in the darker shade of each fill. */
+  --shadow-chunky-yellow: 0 4px 0 var(--color-yellow-shadow);
+  --shadow-chunky-teal: 0 4px 0 var(--color-teal-shadow);
+  --shadow-chunky-coral: 0 4px 0 var(--color-coral-shadow);
+  --shadow-chunky-ink: 0 4px 0 var(--color-ink-shadow);
+  --shadow-chunky-locked: 0 4px 0 var(--color-locked-shadow);
+}
+
+/* Press down onto the shadow on tap. */
+@utility press {
+  transition: transform 80ms, box-shadow 80ms;
+  &:active {
+    transform: translateY(4px);
+    box-shadow: none;
+  }
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-cream text-ink font-sans font-bold antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

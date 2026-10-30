@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Assign a task</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#24324A}a:hover{color:#000}
+</style>
+</helmet>
+<div style="width: 390px; height: 900px; box-sizing: border-box; background: #FFF7E8; color: #24324A; font-family: 'Nunito', system-ui, sans-serif; display: flex; flex-direction: column; gap: 12px; padding: 18px 20px 20px; overflow: hidden">
+
+<div style="display: flex; align-items: center; gap: 10px">
+<a href="#" aria-label="Back" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: #FFFFFF; border: 2px solid #F1E6CF; color: #24324A">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+</a>
+<div style="display: flex; flex-direction: column">
+<span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #5A6478">PM → site manager</span>
+<h1 style="margin: 0; font-size: 24px; font-weight: 900; line-height: 1.1">Assign a task</h1>
+</div>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 800; color: #5A6478">Who’s it for?</span>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button aria-pressed="true" style="min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border: 2px solid #2BB3A3; border-radius: 999px; background: #E3F5F2; font-family: inherit; font-size: 14px; font-weight: 800; color: #24324A"><span style="width: 32px; height: 32px; border-radius: 50%; background: #2BB3A3; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 13px">SM</span>[SITE A]</button>
+<button aria-pressed="false" style="min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border: 2px solid #E6DCC6; border-radius: 999px; background: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 800; color: #24324A"><span style="width: 32px; height: 32px; border-radius: 50%; background: #FF8C5A; color: #24324A; display: flex; align-items: center; justify-content: center; font-size: 13px">SM</span>[SITE B]</button>
+<button aria-pressed="false" style="min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border: 2px solid #E6DCC6; border-radius: 999px; background: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 800; color: #24324A"><span style="width: 32px; height: 32px; border-radius: 50%; background: #FFC93C; color: #24324A; display: flex; align-items: center; justify-content: center; font-size: 13px">SM</span>[SITE C]</button>
+</div>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="at-what" style="font-size: 13px; font-weight: 800; color: #5A6478">What needs doing?</label>
+<input id="at-what" type="text" value="Recovery plan for Block B slippage" style="min-height: 44px; box-sizing: border-box; border: 2px solid #E6DCC6; border-radius: 12px; padding: 0 12px; font-family: inherit; font-size: 15px; font-weight: 700; color: #24324A">
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="at-date" style="font-size: 13px; font-weight: 800; color: #5A6478">Due date</label>
+<input id="at-date" type="date" value="2026-11-06" style="min-height: 44px; box-sizing: border-box; border: 2px solid #E6DCC6; border-radius: 12px; padding: 0 10px; font-family: inherit; font-size: 15px; font-weight: 700; color: #24324A">
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="at-time" style="font-size: 13px; font-weight: 800; color: #5A6478">By</label>
+<input id="at-time" type="time" value="17:00" style="min-height: 44px; box-sizing: border-box; border: 2px solid #E6DCC6; border-radius: 12px; padding: 0 10px; font-family: inherit; font-size: 15px; font-weight: 700; color: #24324A">
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="at-xp" style="font-size: 13px; font-weight: 800; color: #5A6478">XP reward: 40 (max 100)</label>
+<input id="at-xp" type="range" min="10" max="100" step="10" value="40" style="width: 100%; min-height: 44px; accent-color: #FFB800">
+</div>
+</div>
+
+<div style="background: #FFFFFF; border: 2px solid #F1E6CF; border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<label style="min-height: 44px; display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 900"><input type="checkbox" checked style="width: 24px; height: 24px; accent-color: #2BB3A3">Split into sub-tasks for foremen</label>
+<div style="display: flex; align-items: center; gap: 10px; background: #FFF7E8; border-radius: 14px; padding: 10px 12px">
+<span style="width: 10px; height: 10px; border-radius: 50%; background: #FF7A59; flex-shrink: 0"></span>
+<div style="flex: 1; display: flex; flex-direction: column">
+<span style="font-size: 14px; font-weight: 800">Revised labour plan</span>
+<span style="font-size: 12px; font-weight: 700; color: #5A6478">[FOREMAN] · due Wed</span>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; background: #FFF7E8; border-radius: 14px; padding: 10px 12px">
+<span style="width: 10px; height: 10px; border-radius: 50%; background: #FF7A59; flex-shrink: 0"></span>
+<div style="flex: 1; display: flex; flex-direction: column">
+<span style="font-size: 14px; font-weight: 800">Plant availability check</span>
+<span style="font-size: 12px; font-weight: 700; color: #5A6478">[FOREMAN] · due Thu</span>
+</div>
+</div>
+<button style="min-height: 44px; border: 2px dashed #CFC4AC; border-radius: 14px; background: transparent; color: #24324A; font-family: inherit; font-size: 15px; font-weight: 800">+ Add sub-task</button>
+<span style="font-size: 13px; font-weight: 700; color: #5A6478">The parent task ticks itself off when every sub-task is done.</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; margin-top: auto">
+<svg width="56" height="56" viewBox="0 0 120 120" aria-hidden="true">
+<rect x="22" y="44" width="76" height="62" rx="20" fill="#FF8C5A" stroke="#24324A" stroke-width="5"></rect>
+<path d="M24 50a36 30 0 0 1 72 0z" fill="#FFC93C" stroke="#24324A" stroke-width="5" stroke-linejoin="round"></path>
+<rect x="14" y="46" width="92" height="10" rx="5" fill="#FFC93C" stroke="#24324A" stroke-width="5"></rect>
+<circle cx="46" cy="72" r="9" fill="#FFFFFF" stroke="#24324A" stroke-width="4"></circle>
+<circle cx="74" cy="72" r="9" fill="#FFFFFF" stroke="#24324A" stroke-width="4"></circle>
+<circle cx="48" cy="73" r="4.5" fill="#24324A"></circle>
+<circle cx="76" cy="73" r="4.5" fill="#24324A"></circle>
+<path d="M50 86q10 10 20 0" fill="none" stroke="#24324A" stroke-width="5" stroke-linecap="round"></path>
+</svg>
+<button style="flex: 1; min-height: 52px; border: 0; border-radius: 16px; background: #FFC93C; box-shadow: 0 4px 0 #D69E00; color: #24324A; font-family: inherit; font-size: 15px; font-weight: 900; letter-spacing: 0.04em">ASSIGN TASK</button>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
