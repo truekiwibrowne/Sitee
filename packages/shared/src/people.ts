@@ -10,8 +10,12 @@ export const orgSchema = z.object({
   /** Max XP one person can earn per site-local day. */
   dailyXpCap: z.number().int().positive(),
   createdAt: timestamp,
-  /** Set on "Try the demo" sandboxes only. The cleanup job deletes them after expiresAt. */
-  demo: z.literal(true).optional(),
+  /**
+   * True for "Try the demo" sandboxes, false for real companies. Always set, so the
+   * hourly job can list real orgs without reading every sandbox.
+   */
+  demo: z.boolean(),
+  /** Sandboxes only: the hourly job deletes them after this. */
   expiresAt: timestamp.optional(),
 });
 export type Org = z.infer<typeof orgSchema>;
@@ -36,6 +40,8 @@ export const siteSchema = z.object({
   memberIds: z.array(id),
   /** Photos taken outside this circle get flagged. */
   geofence: gps.pick({ lat: true, lng: true }).extend({ radiusM: z.number().positive() }).nullable(),
+  /** Set by the hourly job once it has created this site's tasks for that local day. */
+  tasksGeneratedFor: z.iso.date().optional(),
   createdAt: timestamp,
 });
 export type Site = z.infer<typeof siteSchema>;
@@ -57,6 +63,12 @@ export const userSchema = z.object({
   league: leagueTierSchema,
   /** Share of this person's reviews that held up under audit, 0–1. Null until audited. */
   reviewAccuracy: z.number().min(0).max(1).nullable(),
+  /** Site-local day of the last on-time daily report that counted towards the streak. */
+  lastReportDate: z.iso.date().nullable().optional(),
+  /** Day the hourly job last checked this person's streak after the due time. */
+  streakCheckedOn: z.iso.date().nullable().optional(),
+  /** Day this person last opened their daily chest. */
+  chestOpenedOn: z.iso.date().nullable().optional(),
   createdAt: timestamp,
 });
 export type UserDoc = z.infer<typeof userSchema>;
@@ -70,4 +82,7 @@ export const SERVER_ONLY_USER_FIELDS = [
   'streakFreezes',
   'league',
   'reviewAccuracy',
+  'lastReportDate',
+  'streakCheckedOn',
+  'chestOpenedOn',
 ] as const satisfies readonly (keyof UserDoc)[];

@@ -15,7 +15,8 @@ import {
   type Task,
   type TaskTemplate,
 } from '@site-streak/shared';
-import { db } from '../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../lib/firebase';
 import { useDocData, useQueryData } from '../data/useFirestore';
 import { useNow } from '../data/useNow';
 import { tapHaptic } from '../device/haptics';
@@ -37,6 +38,8 @@ const DAILY_REPORT = 'daily-site-report';
 const WORRY_MINUTES = 120;
 
 type Celebration = { gain: string; message: string } | null;
+
+const callOpenChest = httpsCallable<void, { xp: number; gotFreeze: boolean }>(functions, 'openChest');
 
 const isDone = (t: Task) => t.status === 'submitted' || t.status === 'reviewed';
 
@@ -91,20 +94,42 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
   const tasks = [...withSent].sort((a, b) => a.order - b.order);
   const templateById = new Map(templates.map((t) => [t.id, t]));
   const pendingPhotos = usePendingPhotoCount();
-  const doneCount = tasks.filter(isDone).length;
+  // Excused tasks (e.g. a streak freeze covered them) count as done for the chest.
+  const doneCount = tasks.filter((t) => isDone(t) || t.status === 'excused').length;
   const current = tasks.find((t) => t.status === 'open' || t.status === 'late');
 
   const xp = useCountUp(user?.xpTotal);
   const [celebration, setCelebration] = useState<Celebration>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
+  const chestOpened = !!today && user?.chestOpenedOn === today;
+
+  async function openTodaysChest() {
+    setOpening(true);
+    setNote(null);
+    try {
+      await callOpenChest();
+    } catch (err) {
+      console.error('Chest did not open', err);
+      setNote('The chest is stuck! Check your signal and tap it again.');
+    } finally {
+      setOpening(false);
+    }
+  }
 
   // Celebrate when a task flips to done or XP arrives (both are written by Cloud Functions).
-  const seen = useRef<{ statuses: Map<string, Task['status']>; xp?: number } | null>(null);
+  const seen = useRef<{ statuses: Map<string, Task['status']>; xp?: number; chest: boolean } | null>(null);
   useEffect(() => {
     if (!user || tasksLoading) return;
     const previous = seen.current;
-    seen.current = { statuses: new Map(withSent.map((t) => [t.id, t.status])), xp: user.xpTotal };
+    seen.current = { statuses: new Map(withSent.map((t) => [t.id, t.status])), xp: user.xpTotal, chest: chestOpened };
     if (!previous) return; // First load: nothing to celebrate.
+
+    if (chestOpened && !previous.chest) {
+      tapHaptic();
+      setCelebration({ gain: `+${user.xpTotal - (previous.xp ?? user.xpTotal)} XP`, message: 'Chest opened! XP and a streak freeze for rainy days.' });
+      return;
+    }
 
     const finished = withSent.find((t) => isDone(t) && !['submitted', 'reviewed'].includes(previous.statuses.get(t.id) ?? ''));
     const xpGain = previous.xp !== undefined ? user.xpTotal - previous.xp : 0;
@@ -121,7 +146,7 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
           : `${finished.title} done. Nice work!`
         : `+${xpGain} XP landed. Your work was reviewed!`,
     });
-  }, [user, withSent, sent, tasksLoading]);
+  }, [user, withSent, sent, tasksLoading, chestOpened]);
 
   useEffect(() => {
     if (!celebration) return;
@@ -152,7 +177,9 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
     mood = 'sleeping';
     message = `No tasks today, ${firstName}. Enjoy the quiet!`;
   } else if (left === 0) {
-    message = `All done for today, ${firstName}! Your daily chest is ready.`;
+    message = chestOpened
+      ? `All done for today, ${firstName}. See you tomorrow!`
+      : `All done for today, ${firstName}! Your daily chest is ready.`;
   } else if (report && !isDone(report) && (report.status === 'late' || (minutesLeft !== null && minutesLeft <= 0))) {
     mood = 'worried';
     message = `Your site report is late! Send it now to save your ${user.streak}-day streak.`;
@@ -220,8 +247,10 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
           <DailyChest
             done={doneCount}
             total={tasks.length}
+            opened={chestOpened}
+            opening={opening}
             offset={offsetAt(tasks.length)}
-            onOpen={() => setNote('Chest opening is coming in the next update. Your rewards will be waiting!')}
+            onOpen={() => void openTodaysChest()}
           />
         )}
       </div>

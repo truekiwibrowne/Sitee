@@ -58,8 +58,13 @@ export function buildDemoOrg(opts: {
   const add = (path: string, data: Record<string, unknown>) => docs.push({ path, data });
 
   add(paths.org(orgId), {
-    ...orgSchema.parse({ name: 'Demo Construction Ltd', dailyXpCap: 300, createdAt: now }),
-    ...(opts.expiresAt ? { demo: true, expiresAt: opts.expiresAt } : {}),
+    ...orgSchema.parse({
+      name: 'Demo Construction Ltd',
+      dailyXpCap: 300,
+      createdAt: now,
+      demo: opts.expiresAt !== undefined,
+      ...(opts.expiresAt ? { expiresAt: opts.expiresAt } : {}),
+    }),
   });
 
   add(

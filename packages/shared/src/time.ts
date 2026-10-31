@@ -41,3 +41,31 @@ export function isoWeekId(date: string): string {
   const week = Math.ceil(((day.getTime() - yearStart) / 86_400_000 + 1) / 7);
   return `${day.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
+
+/** Day of the week for a "YYYY-MM-DD" day: 0 = Sunday … 6 = Saturday. */
+export function weekdayOf(date: string): number {
+  const [y = 0, m = 1, d = 1] = date.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+/**
+ * Site work days, Monday to Saturday, as on most of the pilot sites. "Every work day"
+ * templates only create tasks (and only count for streaks) on these days.
+ */
+export function isWorkday(date: string): boolean {
+  return weekdayOf(date) !== 0;
+}
+
+/** The instant (epoch ms) of a site-local day and time, e.g. the report's due time. */
+export function zonedTimeToUtc(date: string, timeOfDay: string, timeZone: string): number {
+  const [y = 0, m = 1, d = 1] = date.split('-').map(Number);
+  const asIfUtc = Date.UTC(y, m - 1, d) + minutesOf(timeOfDay) * 60_000;
+  // What the zone's clock reads at an instant, written as if it were UTC.
+  const wallClock = (ms: number) => {
+    const [wy = 0, wm = 1, wd = 1] = localDateIn(timeZone, new Date(ms)).split('-').map(Number);
+    return Date.UTC(wy, wm - 1, wd) + localMinutesIn(timeZone, new Date(ms)) * 60_000;
+  };
+  const first = asIfUtc - (wallClock(asIfUtc) - asIfUtc);
+  // A second pass corrects for a daylight-saving change between the guess and the answer.
+  return asIfUtc - (wallClock(first) - first);
+}

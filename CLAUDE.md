@@ -12,6 +12,7 @@ Gamified construction site-reporting PWA: Duolingo-style streaks, XP, leagues an
 - Test on the local emulators. Don't test against, write to or deploy the live project (sitee-eeac7) unless I ask.
 - Deploy by hand from the laptop, only when I ask, and only the part that changed: `npm run deploy:web`, `deploy:functions`, `deploy:rules` (`deploy:all` rarely). Batch changes so deploys are infrequent.
 - Keep everything inside Firebase's free quotas: no always-on instances (maxInstances stays low, no minInstances), few scheduled jobs (3 free per billing account, shared with my other projects), photos ~300 KB, no client polling, daily caps on anything public (e.g. demo sandboxes).
+- All scheduled work goes in the one `hourlyTick` function (functions/src/daily.ts): daily task creation, streak checks, demo cleanup. Add to it rather than adding new schedules.
 
 ## Repo layout (npm workspaces)
 `apps/web` · `functions` · `packages/shared` (types, zod schemas, XP rules) · `firestore.rules` · `storage.rules` · `docs`

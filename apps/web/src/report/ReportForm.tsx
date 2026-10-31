@@ -86,13 +86,7 @@ export function ReportForm(props: Props) {
       </div>
     );
   }
-  if (!template) {
-    return (
-      <Shell title={task.title} onBack={props.onBack}>
-        <Bubble>This task has nothing to fill in. Your site manager ticks it off when it’s done.</Bubble>
-      </Shell>
-    );
-  }
+  if (!template) return <MarkDone {...props} />;
   // Keyed so a different task starts with its own draft.
   return <Form key={task.id} {...props} template={template} siteName={site?.name ?? ''} />;
 }
@@ -260,6 +254,38 @@ function Form({ orgId, uid, task, template, siteName, onBack, onSent }: Props & 
           {sending ? 'Sending…' : `Submit · +${task.xp} XP`}
         </Button>
       </div>
+    </Shell>
+  );
+}
+
+/** Tasks with no fields (e.g. "Pour slab B"): one tap sends an empty report for review. */
+function MarkDone({ orgId, uid, task, onBack, onSent }: Props) {
+  const [sending, setSending] = useState(false);
+
+  async function send() {
+    setSending(true);
+    const gps = await currentPosition(5000);
+    // Not awaited, as in the full form: works with no signal.
+    setDoc(doc(db, paths.submissions(orgId), task.id), {
+      taskId: task.id,
+      templateId: null,
+      authorId: uid,
+      siteId: task.siteId,
+      answers: {},
+      photos: [],
+      gps,
+      capturedAt: Timestamp.now(),
+      syncedAt: serverTimestamp(),
+    }).catch((err) => console.error('Report was rejected', err));
+    onSent();
+  }
+
+  return (
+    <Shell title={task.title} onBack={onBack}>
+      <Bubble>Nothing to fill in here. Tap below once it’s done and your site manager will check it off.</Bubble>
+      <Button variant="ink" onClick={() => void send()} disabled={sending}>
+        {sending ? 'Sending…' : `Mark as done · +${task.xp} XP`}
+      </Button>
     </Shell>
   );
 }

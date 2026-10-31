@@ -1,5 +1,4 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
@@ -79,12 +78,15 @@ export const startDemo = onCall(async (request) => {
   return { orgId, role };
 });
 
-/** Deletes expired sandboxes, their photos and the anonymous visitor accounts. */
-export const cleanupDemos = onSchedule('every 6 hours', async () => {
+/**
+ * Deletes expired sandboxes, their photos and the anonymous visitor accounts.
+ * Run by the hourly job (see daily.ts). Returns how many were removed.
+ */
+export async function cleanupExpiredDemos(now: Date = new Date()): Promise<number> {
   // Only sandboxes have expiresAt, so a range query on it finds just those.
   const expired = await getFirestore()
     .collection('orgs')
-    .where('expiresAt', '<', Timestamp.now())
+    .where('expiresAt', '<', Timestamp.fromDate(now))
     .limit(100)
     .get();
 
@@ -94,5 +96,5 @@ export const cleanupDemos = onSchedule('every 6 hours', async () => {
       .deleteUser(org.id.replace(/^demo-/, ''))
       .catch(() => undefined); // Already gone.
   }
-  logger.info('Cleaned up demo sandboxes', { count: expired.size });
-});
+  return expired.size;
+}

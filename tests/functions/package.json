@@ -1,0 +1,13 @@
+{
+  "name": "functions-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:functions": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@site-streak/shared": "*",
+    "firebase-admin": "^14.5.0"
+  }
+}

@@ -7,6 +7,7 @@ initializeApp();
 // require. maxInstances keeps a runaway trigger from scaling up the bill.
 setGlobalOptions({ region: 'us-central1', maxInstances: 10 });
 
-export { cleanupDemos, startDemo } from './demo.js';
-
-// Triggers (onSubmission, onReview, daily scheduler) land in step 7.
+export { openChest } from './chest.js';
+export { hourlyTick } from './daily.js';
+export { startDemo } from './demo.js';
+export { onReview, onSubmission } from './work.js';
