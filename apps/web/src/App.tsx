@@ -3,18 +3,14 @@ import { useAuth } from './auth/AuthProvider';
 import { SignIn } from './auth/SignIn';
 import { ForemanApp } from './foreman/ForemanApp';
 import { ComingSoon, MeScreen } from './shell/SimpleScreens';
+import { Splash, useSplash } from './shell/Splash';
 import { Button } from './ui/Button';
 
 export function App() {
   const { loading, user, claims, refreshClaims, signOut } = useAuth();
+  const showSplash = useSplash(loading);
 
-  if (loading) {
-    return (
-      <main className="flex min-h-dvh items-center justify-center">
-        <img src="/icon.svg" alt="Loading" className="size-20 animate-pulse" />
-      </main>
-    );
-  }
+  if (showSplash) return <Splash />;
 
   // A demo visitor stays on the sign-in screen until their sandbox is ready.
   if (!user || (user.isAnonymous && !claims)) return <SignIn />;

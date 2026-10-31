@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { collection, query, where } from 'firebase/firestore';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import {
   formatTimeOfDay,
   isoWeekId,
@@ -19,7 +19,9 @@ import { db } from '../lib/firebase';
 import { useDocData, useQueryData } from '../data/useFirestore';
 import { useNow } from '../data/useNow';
 import { tapHaptic } from '../device/haptics';
-import { Brix, type BrixMood } from '../ui/Brix';
+import { forgetSentReport } from '../report/ReportForm';
+import { usePendingPhotoCount } from '../report/uploader';
+import { Streakee, type StreakeeMood } from '../ui/Streakee';
 import { Confetti } from '../ui/Confetti';
 import { useCountUp } from '../ui/useCountUp';
 import { DailyChest } from './DailyChest';
@@ -31,7 +33,7 @@ const PATH_OFFSETS = [10, 64, 104, 64];
 const offsetAt = (i: number) => PATH_OFFSETS[i % PATH_OFFSETS.length]!;
 
 const DAILY_REPORT = 'daily-site-report';
-/** Brix starts worrying this close to the report's due time. */
+/** Streakee starts worrying this close to the report's due time. */
 const WORRY_MINUTES = 120;
 
 type Celebration = { gain: string; message: string } | null;
@@ -58,8 +60,37 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
   const { data: templates } = useQueryData(collection(db, paths.taskTemplates(orgId)), `${orgId}/templates`, taskTemplateSchema);
   const { data: league } = useDocData(today ? `${paths.leagueMembers(orgId, isoWeekId(today))}/${uid}` : null, leagueMemberSchema);
 
-  const tasks = [...rawTasks].sort((a, b) => a.order - b.order);
+  // My reports for today's tasks, including ones still waiting for signal. A sent report
+  // counts as done straight away; Cloud Functions catch the task status up when it syncs.
+  const [sent, setSent] = useState<Map<string, boolean>>(new Map()); // taskId → still pending sync
+  const taskIds = rawTasks.map((t) => t.id).slice(0, 30).join(',');
+  useEffect(() => {
+    if (!taskIds) return;
+    const q = query(
+      collection(db, paths.submissions(orgId)),
+      where('authorId', '==', uid),
+      where('taskId', 'in', taskIds.split(',')),
+    );
+    return onSnapshot(q, { includeMetadataChanges: true }, (snap) =>
+      setSent(new Map(snap.docs.map((d) => [d.id, d.metadata.hasPendingWrites]))),
+    );
+  }, [orgId, uid, taskIds]);
+
+  // Once the server has a report, its local draft and photo records can go.
+  useEffect(() => {
+    for (const [taskId, pending] of sent) if (!pending) forgetSentReport(orgId, taskId);
+  }, [orgId, sent]);
+
+  const withSent = useMemo(
+    () =>
+      rawTasks.map((t) =>
+        sent.has(t.id) && (t.status === 'open' || t.status === 'late') ? { ...t, status: 'submitted' as const } : t,
+      ),
+    [rawTasks, sent],
+  );
+  const tasks = [...withSent].sort((a, b) => a.order - b.order);
   const templateById = new Map(templates.map((t) => [t.id, t]));
+  const pendingPhotos = usePendingPhotoCount();
   const doneCount = tasks.filter(isDone).length;
   const current = tasks.find((t) => t.status === 'open' || t.status === 'late');
 
@@ -72,10 +103,10 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
   useEffect(() => {
     if (!user || tasksLoading) return;
     const previous = seen.current;
-    seen.current = { statuses: new Map(rawTasks.map((t) => [t.id, t.status])), xp: user.xpTotal };
+    seen.current = { statuses: new Map(withSent.map((t) => [t.id, t.status])), xp: user.xpTotal };
     if (!previous) return; // First load: nothing to celebrate.
 
-    const finished = rawTasks.find((t) => isDone(t) && !['submitted', 'reviewed'].includes(previous.statuses.get(t.id) ?? ''));
+    const finished = withSent.find((t) => isDone(t) && !['submitted', 'reviewed'].includes(previous.statuses.get(t.id) ?? ''));
     const xpGain = previous.xp !== undefined ? user.xpTotal - previous.xp : 0;
     if (!finished && xpGain <= 0) return;
 
@@ -84,11 +115,13 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
       gain: xpGain > 0 ? `+${xpGain} XP` : `+${finished!.xp} XP`,
       message: finished
         ? finished.templateId === DAILY_REPORT
-          ? 'Report in! Your streak is safe. Your site manager will review it.'
+          ? sent.get(finished.id)
+            ? 'Report saved! It sends the moment you have signal.'
+            : 'Report in! Your streak is safe. Your site manager will review it.'
           : `${finished.title} done. Nice work!`
         : `+${xpGain} XP landed. Your work was reviewed!`,
     });
-  }, [user, rawTasks, tasksLoading]);
+  }, [user, withSent, sent, tasksLoading]);
 
   useEffect(() => {
     if (!celebration) return;
@@ -99,19 +132,19 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
   if (!user || !site) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <Brix mood="idle" />
+        <Streakee mood="idle" />
       </div>
     );
   }
 
-  // Brix's message and mood for the day so far.
+  // Streakee's message and mood for the day so far.
   const firstName = user.name.split(' ')[0];
   const report = tasks.find((t) => t.templateId === DAILY_REPORT);
   const dueTime = templateById.get(DAILY_REPORT)?.dueTime;
   const minutesLeft = dueTime ? minutesOf(dueTime) - localMinutesIn(site.timezone, now) : null;
   const left = tasks.length - doneCount;
 
-  let mood: BrixMood = 'idle';
+  let mood: StreakeeMood = 'idle';
   let message: string;
   if (tasksLoading) {
     message = 'Getting your day ready…';
@@ -151,9 +184,14 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
   return (
     <div className="flex flex-col gap-3.5 px-5 pt-5 pb-4">
       <StatusChips streak={user.streak} xp={xp} tier={league?.tier ?? user.league} rank={league?.rank ?? null} />
+      {pendingPhotos > 0 && (
+        <p className="self-center rounded-full bg-white px-3 py-1 text-sm font-bold text-muted" role="status">
+          {pendingPhotos} {pendingPhotos === 1 ? 'photo' : 'photos'} waiting to upload
+        </p>
+      )}
 
       <div className="relative flex items-center gap-2.5">
-        <Brix mood={mood} />
+        <Streakee mood={mood} />
         <p className="flex-1 rounded-card border-2 border-card-line bg-white px-3.5 py-3 text-[15px] leading-snug" aria-live="polite">
           {message}
         </p>
@@ -174,6 +212,7 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
             icon={iconFor(t, templateById.get(t.templateId ?? ''))}
             offset={offsetAt(i)}
             waitingOn={t.dependsOn.map((id) => tasks.find((d) => d.id === id)?.title).find(Boolean) ?? null}
+            pendingSync={sent.get(t.id) === true}
             onOpen={() => onOpenTask(t)}
           />
         ))}

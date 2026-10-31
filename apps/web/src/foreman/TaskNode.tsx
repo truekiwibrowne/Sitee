@@ -26,9 +26,10 @@ const fill: Record<NodeTone, string> = {
   coral: 'bg-coral shadow-node-coral',
 };
 
-function subtitle(task: Task, state: NodeState, waitingOn: string | null) {
+function subtitle(task: Task, state: NodeState, waitingOn: string | null, pendingSync: boolean) {
   switch (state) {
     case 'done':
+      if (pendingSync) return 'Saved · sends when you have signal';
       return task.status === 'submitted' ? `Sent for review · +${task.xp} XP` : `Done · +${task.xp} XP`;
     case 'locked':
       return waitingOn ? `Waiting on ${waitingOn.toLowerCase()}` : 'Locked for now';
@@ -49,12 +50,14 @@ type Props = {
   /** Indent that makes the winding path. */
   offset: number;
   waitingOn: string | null;
+  /** A sent report still waiting for signal. */
+  pendingSync?: boolean;
   onOpen: () => void;
 };
 
 /** One stop on the day's winding task path. */
-export function TaskNode({ task, state, tone, icon, offset, waitingOn, onOpen }: Props) {
-  const label = subtitle(task, state, waitingOn);
+export function TaskNode({ task, state, tone, icon, offset, waitingOn, pendingSync = false, onOpen }: Props) {
+  const label = subtitle(task, state, waitingOn, pendingSync);
 
   let circle;
   if (state === 'done') {

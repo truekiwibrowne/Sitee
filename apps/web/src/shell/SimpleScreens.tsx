@@ -1,13 +1,13 @@
-import { ROLE_LABEL, type Task } from '@site-streak/shared';
+import { ROLE_LABEL } from '@site-streak/shared';
 import { useAuth } from '../auth/AuthProvider';
-import { Brix } from '../ui/Brix';
+import { Streakee } from '../ui/Streakee';
 import { Button } from '../ui/Button';
 
 /** Placeholder for tabs that later steps fill in. */
 export function ComingSoon({ title, blurb }: { title: string; blurb: string }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-5 text-center">
-      <Brix mood="sleeping" />
+      <Streakee mood="sleeping" />
       <h1 className="text-2xl font-black">{title}</h1>
       <p className="text-muted">{blurb}</p>
     </div>
@@ -44,24 +44,6 @@ export function MeScreen() {
       <Button variant="ghost" onClick={signOut}>
         Sign out
       </Button>
-    </div>
-  );
-}
-
-/** Stand-in for a task's form until the report form lands (step 6). */
-export function TaskPlaceholder({ task, onBack }: { task: Task; onBack: () => void }) {
-  return (
-    <div className="flex flex-1 flex-col gap-5 px-5 pt-[max(20px,env(safe-area-inset-top))] pb-6">
-      <button type="button" onClick={onBack} className="min-h-11 self-start text-muted underline">
-        ← Back to today
-      </button>
-      <h1 className="text-3xl font-black">{task.title}</h1>
-      <div className="flex items-center gap-3">
-        <Brix mood="idle" size={72} />
-        <p className="flex-1 rounded-card border-2 border-card-line bg-white px-3.5 py-3">
-          This form is being built next. Soon you’ll fill it in here, even with no signal.
-        </p>
-      </div>
     </div>
   );
 }

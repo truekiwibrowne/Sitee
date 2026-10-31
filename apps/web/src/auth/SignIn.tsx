@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
@@ -10,6 +10,7 @@ import {
 import { DEMO_PEOPLE, ROLE_LABEL, type Role } from '@site-streak/shared';
 import { auth } from '../lib/firebase';
 import { Button } from '../ui/Button';
+import { Streakee } from '../ui/Streakee';
 import { startDemo } from './demo';
 
 const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true';
@@ -37,15 +38,17 @@ function friendlyError(err: unknown): string {
 
 export function SignIn() {
   const [error, setError] = useState('');
+  const [showEmail, setShowEmail] = useState(false);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[390px] flex-col gap-6 px-5 py-10">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <img src="/icon.svg" alt="" className="size-24" />
+    <main className="mx-auto flex min-h-dvh max-w-[390px] flex-col gap-5 px-5 pt-[max(40px,env(safe-area-inset-top))] pb-10">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <Streakee size={110} />
         <h1 className="text-3xl font-black">Site Streak</h1>
         <p className="text-muted">Sign in to start today’s tasks.</p>
       </div>
 
+      {/* Social sign-in first. Apple and Microsoft join Google here later. */}
       <Button
         variant="ghost"
         caps={false}
@@ -59,13 +62,13 @@ export function SignIn() {
         Continue with Google
       </Button>
 
-      <div className="flex items-center gap-3 text-sm text-muted" aria-hidden="true">
-        <span className="h-0.5 flex-1 bg-card-line" />
-        or use email
-        <span className="h-0.5 flex-1 bg-card-line" />
-      </div>
-
-      <EmailPasswordForm onError={setError} />
+      {showEmail ? (
+        <EmailPasswordForm onError={setError} />
+      ) : (
+        <button type="button" onClick={() => setShowEmail(true)} className="min-h-11 text-muted underline">
+          Use email instead
+        </button>
+      )}
 
       {error && (
         <p role="alert" className="rounded-card border-2 border-coral bg-white px-4 py-3 text-coral-shadow">
@@ -80,6 +83,49 @@ export function SignIn() {
   );
 }
 
+/** A chunky header that opens and closes the section below it. */
+function Disclosure({ title, hint, tone, children }: { title: string; hint?: string; tone: 'yellow' | 'dashed'; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  return (
+    <section
+      className={`rounded-card border-2 bg-white ${tone === 'yellow' ? 'border-yellow' : 'border-dashed border-locked-shadow'}`}
+    >
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen(!open)}
+        className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left"
+      >
+        <span>
+          <span className="block text-lg font-black">{title}</span>
+          {hint && <span className="block text-sm text-muted">{hint}</span>}
+        </span>
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+          aria-hidden="true"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <div id={panelId} className="flex flex-col gap-2 px-4 pb-4">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
+
 /** Lets anyone try a role in a private, throwaway copy of the demo company. */
 function TryDemo({ onError }: { onError: (msg: string) => void }) {
   const [starting, setStarting] = useState<Role | null>(null);
@@ -91,29 +137,20 @@ function TryDemo({ onError }: { onError: (msg: string) => void }) {
       await startDemo(role);
     } catch (err) {
       console.error('Demo failed to start', err);
-      onError('Couldn’t start the demo. Check your signal and try again.');
+      const busy = (err as { code?: string }).code === 'functions/resource-exhausted';
+      onError(busy ? 'The demo is very busy today. Please try again tomorrow.' : 'Couldn’t start the demo. Check your signal and try again.');
       setStarting(null);
     }
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-card border-2 border-yellow bg-white p-4">
-      <div>
-        <h2 className="text-lg font-black">Just looking? Try the demo</h2>
-        <p className="text-sm text-muted">No sign-up. Pick a role and play with a sample site. It resets after a day.</p>
-      </div>
+    <Disclosure title="Just looking? Try the demo" hint="No sign-up. Pick a role. Resets after a day." tone="yellow">
       {DEMO_PEOPLE.map((p) => (
-        <Button
-          key={p.role}
-          variant="ghost"
-          caps={false}
-          disabled={starting !== null}
-          onClick={() => begin(p.role)}
-        >
+        <Button key={p.role} variant="ghost" caps={false} disabled={starting !== null} onClick={() => begin(p.role)}>
           {starting === p.role ? 'Building your demo site…' : `Try as ${ROLE_LABEL[p.role].toLowerCase()}`}
         </Button>
       ))}
-    </section>
+    </Disclosure>
   );
 }
 
@@ -246,8 +283,7 @@ function GoogleMark() {
 /** Emulator-only shortcut: one tap to sign in as any seeded role. */
 function DevSignIn({ onError }: { onError: (msg: string) => void }) {
   return (
-    <section className="flex flex-col gap-2 rounded-card border-2 border-dashed border-locked-shadow p-4">
-      <h2 className="text-sm font-black text-muted">EMULATOR · SIGN IN AS</h2>
+    <Disclosure title="Emulator: sign in as…" hint="Local dev only" tone="dashed">
       {DEMO_PEOPLE.map((u) => (
         <Button
           key={u.email}
@@ -262,6 +298,6 @@ function DevSignIn({ onError }: { onError: (msg: string) => void }) {
           {u.name} · {ROLE_LABEL[u.role]}
         </Button>
       ))}
-    </section>
+    </Disclosure>
   );
 }

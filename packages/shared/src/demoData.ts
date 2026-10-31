@@ -26,7 +26,8 @@ export type DemoPerson = {
 const SITE_A = 'site-a';
 const SITE_B = 'site-b';
 const PROJECT = 'riverside';
-const TIMEZONE = 'Africa/Kampala';
+/** The seeded demo site's timezone. Live sandboxes use the visitor's own instead. */
+export const DEMO_TIMEZONE = 'Africa/Kampala';
 
 export const DEMO_PEOPLE: DemoPerson[] = [
   { key: 'foreman', name: 'Grace Foreman', email: 'foreman@demo.test', role: 'foreman', siteIds: [SITE_A], xpTotal: 1240, weeklyXp: 310, streak: 12, league: 'silver' },
@@ -48,8 +49,11 @@ export function buildDemoOrg(opts: {
   uidFor: (person: DemoPerson) => string;
   /** Set for live sandboxes; the cleanup job deletes the org after this time. */
   expiresAt?: TimestampLike;
+  /** IANA timezone for the sites, so due times and "late" match where the visitor is. */
+  timeZone?: string;
 }): DemoDoc[] {
   const { orgId, now, uidFor } = opts;
+  const timeZone = opts.timeZone ?? DEMO_TIMEZONE;
   const docs: DemoDoc[] = [];
   const add = (path: string, data: Record<string, unknown>) => docs.push({ path, data });
 
@@ -60,7 +64,7 @@ export function buildDemoOrg(opts: {
 
   add(
     `${paths.projects(orgId)}/${PROJECT}`,
-    projectSchema.parse({ name: 'Riverside Apartments', timezone: TIMEZONE, siteIds: [SITE_A, SITE_B], baselineId: null, createdAt: now }),
+    projectSchema.parse({ name: 'Riverside Apartments', timezone: timeZone, siteIds: [SITE_A, SITE_B], baselineId: null, createdAt: now }),
   );
 
   for (const [id, name] of [
@@ -72,7 +76,7 @@ export function buildDemoOrg(opts: {
       siteSchema.parse({
         name,
         projectId: PROJECT,
-        timezone: TIMEZONE,
+        timezone: timeZone,
         memberIds: DEMO_PEOPLE.filter((p) => p.siteIds.includes(id)).map(uidFor),
         geofence: null,
         createdAt: now,
@@ -143,7 +147,7 @@ export function buildDemoOrg(opts: {
   );
 
   // Today's league table, ranked by weekly XP.
-  const today = localDateIn(TIMEZONE, new Date(now.toMillis()));
+  const today = localDateIn(timeZone, new Date(now.toMillis()));
   const ranked = [...DEMO_PEOPLE].sort((a, b) => b.weeklyXp - a.weeklyXp);
   ranked.forEach((p, i) => {
     add(

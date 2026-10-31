@@ -1,12 +1,17 @@
 # Site Streak
 
-Gamified construction site-reporting PWA: Duolingo-style streaks, XP, leagues and a mascot (Brix) wrapped around daily site reports, QC hold points, reviews, assigned tasks and training. Full plan: `docs/PLAN.md`. Screen mockups: `docs/mockups/` (reference markup + interaction logic, not production code).
+Gamified construction site-reporting PWA: Duolingo-style streaks, XP, leagues and a mascot (Streakee) wrapped around daily site reports, QC hold points, reviews, assigned tasks and training. Full plan: `docs/PLAN.md`. Screen mockups: `docs/mockups/` (reference markup + interaction logic, not production code).
 
 ## Stack (don't substitute without asking)
 - React 18 + TypeScript + Vite PWA (vite-plugin-pwa), Tailwind, Framer Motion
 - Firebase: Hosting, Auth (email + password, Google), Firestore (offline persistence), Storage (photos), Functions v2 (TS, Node 22), scheduled functions, FCM, App Check
 - Firebase Emulator Suite for local dev and tests
-- GitHub Actions: lint + test on PR, preview channel on PR, deploy live on merge to main
+- GitHub Actions: lint + typecheck + test (incl. emulator rules tests) on PR and main. No deploys and no Firebase access from GitHub.
+
+## Deploys and running costs
+- Test on the local emulators. Don't test against, write to or deploy the live project (sitee-eeac7) unless I ask.
+- Deploy by hand from the laptop, only when I ask, and only the part that changed: `npm run deploy:web`, `deploy:functions`, `deploy:rules` (`deploy:all` rarely). Batch changes so deploys are infrequent.
+- Keep everything inside Firebase's free quotas: no always-on instances (maxInstances stays low, no minInstances), few scheduled jobs (3 free per billing account, shared with my other projects), photos ~300 KB, no client polling, daily caps on anything public (e.g. demo sandboxes).
 
 ## Repo layout (npm workspaces)
 `apps/web` · `functions` · `packages/shared` (types, zod schemas, XP rules) · `firestore.rules` · `storage.rules` · `docs`
@@ -32,7 +37,7 @@ The PWA will be wrapped with Capacitor for both stores. Build so that's a wrap, 
 "Try the demo" on the sign-in screen: anonymous sign-in, then a Cloud Function copies the demo org into a private sandbox (`orgs/demo-{uid}`) with `demo: true` claims for the chosen role. Sandboxes are isolated and deleted after 24 hrs. Rules must keep demo users inside their own sandbox and cap their uploads. Functions are bundled with esbuild so they can import `packages/shared`.
 
 ## Look and feel
-Friendly and playful, not corporate. Tokens: bg #FFF7E8, ink #24324A, muted #5A6478, yellow #FFC93C (shadow #D69E00), teal #2BB3A3 (shadow #17766C), coral #FF7A59 (shadow #C2410C), locked #E6E1D6. Font: Nunito 700–900. Chunky rounded buttons with a 4px darker bottom shadow that presses down on tap. Brix = brick in a yellow hard hat (SVG component; idle bob, cheer, worried states). Confetti + XP count-up on completion. Respect prefers-reduced-motion. Touch targets ≥ 44px. Mobile-first at 390px. Don't copy Duolingo assets or colours.
+Friendly and playful, not corporate. Tokens: bg #FFF7E8, ink #24324A, muted #5A6478, yellow #FFC93C (shadow #D69E00), teal #2BB3A3 (shadow #17766C), coral #FF7A59 (shadow #C2410C), locked #E6E1D6. Font: Nunito 700–900. Chunky rounded buttons with a 4px darker bottom shadow that presses down on tap. Streakee = brick in a yellow hard hat (SVG component; idle hops with eyes looking around, cheer, worried, sleeping, flips on the loading screen). Confetti + XP count-up on completion. Respect prefers-reduced-motion. Touch targets ≥ 44px. Mobile-first at 390px. Don't copy Duolingo assets or colours.
 
 ## Working style
 - Keep it simple; no over-engineering.

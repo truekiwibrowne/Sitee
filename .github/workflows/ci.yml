@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
 
+# Checks only: no secrets and no access to Firebase. Deploys are run by hand (see README).
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

@@ -30,10 +30,19 @@ The emulators run as `demo-site-streak`, so no real Firebase project or login is
 - `packages/shared` – types, zod schemas, XP rules shared by both
 - `firestore.rules`, `storage.rules` – security rules
 
-## CI/CD (GitHub Actions)
+## CI (GitHub Actions)
 
-- `ci.yml` – lint, typecheck, build and emulator tests on every PR and on `main`
-- `preview.yml` – deploys each PR to a 7-day Hosting preview channel and comments the link
-- `deploy.yml` – on merge to `main`, deploys Hosting, Functions and rules to the live project
+`ci.yml` runs lint, typecheck, build and the emulator tests on every PR and push to `main`. It has no secrets and no access to Firebase.
 
-Both deploy workflows use the `FIREBASE_SERVICE_ACCOUNT_SITEE_EEAC7` repo secret (created by `firebase init hosting:github`).
+## Deploying (by hand, from your laptop)
+
+Test locally first. Then deploy only what changed:
+
+| Command | Deploys |
+| --- | --- |
+| `npm run deploy:web` | The web app (Hosting) |
+| `npm run deploy:functions` | Cloud Functions (unchanged functions are skipped) |
+| `npm run deploy:rules` | Firestore and Storage security rules + indexes |
+| `npm run deploy:all` | Everything (rarely needed) |
+
+You need to be logged in (`npx firebase login`) as an owner of `sitee-eeac7`.
