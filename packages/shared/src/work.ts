@@ -16,9 +16,9 @@ export const taskSchema = z.object({
   assigneeId: id,
   /** Null when the daily scheduler created it. */
   assignedById: id.nullable(),
-  siteId: id,
+  zoneId: id,
   projectId: id,
-  /** Site-local day the task belongs to. */
+  /** Project-local day the task belongs to. */
   date: localDate,
   dueAt: timestamp.nullable(),
   status: taskStatusSchema,
@@ -52,11 +52,13 @@ export const submissionSchema = z.object({
   taskId: id,
   templateId: id.nullable(),
   authorId: id,
-  siteId: id,
+  zoneId: id,
   /** Validate against the template with answersSchemaFor(template.fields). */
   answers: z.record(z.string(), z.union([z.string(), z.number(), z.array(id), z.null()])),
   photos: z.array(photoSchema),
   gps: gps.nullable(),
+  /** When the person opened the form. With capturedAt, gives the speed bonus. */
+  startedAt: timestamp,
   /** When the person pressed submit on the phone (may be offline). */
   capturedAt: timestamp,
   /** Server time it reached Firestore. Set by the server, not the phone. */

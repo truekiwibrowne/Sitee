@@ -26,8 +26,20 @@ service cloud.firestore {
       return request.auth.token.role in ['siteManager', 'projectManager', 'constructionManager', 'admin'];
     }
 
+    // Pending invites, keyed by email. Created and claimed only by Cloud Functions;
+    // admins can list their own company's.
+    match /invites/{email} {
+      allow read: if signedIn() && isAdmin() && resource.data.orgId == request.auth.token.orgId;
+    }
+
     match /orgs/{orgId} {
       allow read: if inOrg(orgId);
+      // Admins can rename the company. Everything else on the org is server-only.
+      allow update: if inOrg(orgId) && isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80;
 
       function task(taskId) {
         return get(/databases/$(database)/documents/orgs/$(orgId)/tasks/$(taskId)).data;
@@ -38,22 +50,31 @@ service cloud.firestore {
 
       match /users/{userId} {
         allow read: if inOrg(orgId);
-        // People may only rename themselves. Role, sites and all game state are server-only.
+        // People may change their own name and avatar. Role, projects, zones and all
+        // game state are server-only.
         allow update: if inOrg(orgId) && userId == uid()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'avatar'])
           && request.resource.data.name is string
           && request.resource.data.name.size() > 0
-          && request.resource.data.name.size() <= 80;
+          && request.resource.data.name.size() <= 80
+          // Keep in step with CHARACTERS in packages/shared/src/characters.ts.
+          && request.resource.data.avatar in ['brix', 'blocx'];
       }
 
-      // Admin-managed setup. Settings screens arrive in Phase 2.
+      // Admin-managed setup (the admin screens).
       match /projects/{projectId} {
         allow read: if inOrg(orgId);
-        allow write: if inOrg(orgId) && isAdmin();
+        allow create, update: if inOrg(orgId) && isAdmin()
+          && request.resource.data.keys().hasAll(['name', 'timezone', 'address', 'baselineId', 'createdAt'])
+          && request.resource.data.name is string && request.resource.data.name.size() > 0
+          && request.resource.data.timezone is string;
       }
-      match /sites/{siteId} {
+      match /zones/{zoneId} {
         allow read: if inOrg(orgId);
-        allow write: if inOrg(orgId) && isAdmin();
+        allow create, update: if inOrg(orgId) && isAdmin()
+          && request.resource.data.keys().hasAll(['name', 'projectId', 'geofence', 'createdAt'])
+          && request.resource.data.name is string && request.resource.data.name.size() > 0
+          && exists(/databases/$(database)/documents/orgs/$(orgId)/projects/$(request.resource.data.projectId));
       }
       match /taskTemplates/{templateId} {
         allow read: if inOrg(orgId);
@@ -74,19 +95,20 @@ service cloud.firestore {
 
         function validSubmission(taskId, d) {
           let t = task(taskId);
-          return d.keys().hasOnly(['taskId', 'templateId', 'authorId', 'siteId', 'answers', 'photos', 'gps', 'capturedAt', 'syncedAt'])
-            && d.keys().hasAll(['taskId', 'templateId', 'authorId', 'siteId', 'answers', 'photos', 'gps', 'capturedAt', 'syncedAt'])
+          return d.keys().hasOnly(['taskId', 'templateId', 'authorId', 'zoneId', 'answers', 'photos', 'gps', 'startedAt', 'capturedAt', 'syncedAt'])
+            && d.keys().hasAll(['taskId', 'templateId', 'authorId', 'zoneId', 'answers', 'photos', 'gps', 'startedAt', 'capturedAt', 'syncedAt'])
             && d.taskId == taskId
             && d.authorId == uid()
             && t.assigneeId == uid()
             && t.kind != 'review'
             && t.status in ['open', 'late']
-            && d.siteId == t.siteId
+            && d.zoneId == t.zoneId
             && d.templateId == t.templateId
             && d.answers is map
             && d.photos is list
             && d.photos.size() <= 20
             && (d.gps == null || d.gps is map)
+            && d.startedAt is timestamp
             && d.capturedAt is timestamp
             // Must be serverTimestamp(): the phone can't fake when it synced.
             && d.syncedAt == request.time;

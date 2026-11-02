@@ -1,5 +1,5 @@
 // Site-local time helpers. Due times, streak days and daily tasks all follow the
-// site's own timezone, not the phone's or the server's.
+// project's own timezone, not the phone's or the server's.
 
 function partsIn(timeZone: string, at: Date, options: Intl.DateTimeFormatOptions) {
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone, ...options }).formatToParts(at);
@@ -49,14 +49,14 @@ export function weekdayOf(date: string): number {
 }
 
 /**
- * Site work days, Monday to Saturday, as on most of the pilot sites. "Every work day"
+ * Work days, Monday to Saturday, as on most of the pilot projects. "Every work day"
  * templates only create tasks (and only count for streaks) on these days.
  */
 export function isWorkday(date: string): boolean {
   return weekdayOf(date) !== 0;
 }
 
-/** The instant (epoch ms) of a site-local day and time, e.g. the report's due time. */
+/** The instant (epoch ms) of a project-local day and time, e.g. the report's due time. */
 export function zonedTimeToUtc(date: string, timeOfDay: string, timeZone: string): number {
   const [y = 0, m = 1, d = 1] = date.split('-').map(Number);
   const asIfUtc = Date.UTC(y, m - 1, d) + minutesOf(timeOfDay) * 60_000;

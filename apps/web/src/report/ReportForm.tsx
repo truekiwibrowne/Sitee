@@ -5,7 +5,7 @@ import {
   formatTimeOfDay,
   paths,
   photoPath,
-  siteSchema,
+  zoneSchema,
   taskTemplateSchema,
   type Answers,
   type AnswerValue,
@@ -18,7 +18,7 @@ import { useDocData } from '../data/useFirestore';
 import { takePhoto } from '../device/camera';
 import { currentPosition } from '../device/location';
 import { Button } from '../ui/Button';
-import { Streakee } from '../ui/Streakee';
+import { Brix } from '../ui/Brix';
 import { compressPhoto, sha256 } from './compress';
 import { NumberField, PhotoField, PickListField, TextField } from './fields';
 import { deletePhoto, forgetTaskPhotos, getPhoto, putPhoto, queueTaskPhotos } from './photoStore';
@@ -27,6 +27,20 @@ import { photosQueued } from './uploader';
 type Props = { orgId: string; uid: string; task: Task & { id: string }; onBack: () => void; onSent: () => void };
 
 const draftKey = (orgId: string, taskId: string) => `draft:${orgId}:${taskId}`;
+const startedKey = (orgId: string, taskId: string) => `started:${orgId}:${taskId}`;
+
+/** When this person first opened this task's form. Kept with the draft, for the speed bonus. */
+function startedAtFor(orgId: string, taskId: string): number {
+  try {
+    const saved = Number(localStorage.getItem(startedKey(orgId, taskId)));
+    if (saved > 0) return saved;
+    const now = Date.now();
+    localStorage.setItem(startedKey(orgId, taskId), String(now));
+    return now;
+  } catch {
+    return Date.now();
+  }
+}
 
 /**
  * Clears a report's local draft and photo records. Called only once the server has the
@@ -35,6 +49,7 @@ const draftKey = (orgId: string, taskId: string) => `draft:${orgId}:${taskId}`;
 export function forgetSentReport(orgId: string, taskId: string) {
   try {
     localStorage.removeItem(draftKey(orgId, taskId));
+    localStorage.removeItem(startedKey(orgId, taskId));
   } catch {
     // Ignore.
   }
@@ -77,21 +92,22 @@ export function ReportForm(props: Props) {
     task.templateId ? `${paths.taskTemplates(orgId)}/${task.templateId}` : null,
     taskTemplateSchema,
   );
-  const { data: site } = useDocData(`${paths.sites(orgId)}/${task.siteId}`, siteSchema);
+  const { data: zone } = useDocData(`${paths.zones(orgId)}/${task.zoneId}`, zoneSchema);
 
   if (loading) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <Streakee />
+        <Brix />
       </div>
     );
   }
   if (!template) return <MarkDone {...props} />;
   // Keyed so a different task starts with its own draft.
-  return <Form key={task.id} {...props} template={template} siteName={site?.name ?? ''} />;
+  return <Form key={task.id} {...props} template={template} zoneName={zone?.name ?? ''} />;
 }
 
-function Form({ orgId, uid, task, template, siteName, onBack, onSent }: Props & { template: TaskTemplate; siteName: string }) {
+function Form({ orgId, uid, task, template, zoneName, onBack, onSent }: Props & { template: TaskTemplate; zoneName: string }) {
+  const [startedAt] = useState(() => startedAtFor(orgId, task.id));
   const online = useOnline();
   const [answers, setAnswers] = useState<Answers>(() => loadDraft(orgId, task.id, template));
   const [urls, setUrls] = useState<Record<string, string>>({});
@@ -139,7 +155,7 @@ function Form({ orgId, uid, task, template, siteName, onBack, onSent }: Props & 
       await putPhoto({
         id,
         orgId,
-        siteId: task.siteId,
+        zoneId: task.zoneId,
         taskId: task.id,
         fieldId,
         blob,
@@ -182,7 +198,7 @@ function Form({ orgId, uid, task, template, siteName, onBack, onSent }: Props & 
       photos.push({
         id,
         fieldId: p.fieldId,
-        storagePath: photoPath(orgId, task.siteId, task.id, id),
+        storagePath: photoPath(orgId, task.zoneId, task.id, id),
         capturedAt: Timestamp.fromMillis(p.capturedAt),
         gps: p.gps,
         sha256: p.sha256,
@@ -195,10 +211,11 @@ function Form({ orgId, uid, task, template, siteName, onBack, onSent }: Props & 
       taskId: task.id,
       templateId: task.templateId,
       authorId: uid,
-      siteId: task.siteId,
+      zoneId: task.zoneId,
       answers: result.data,
       photos,
       gps,
+      startedAt: Timestamp.fromMillis(startedAt),
       capturedAt: Timestamp.now(),
       syncedAt: serverTimestamp(),
     }).catch((err) => console.error('Report was rejected', err));
@@ -212,7 +229,7 @@ function Form({ orgId, uid, task, template, siteName, onBack, onSent }: Props & 
   const missing = errors.size;
 
   return (
-    <Shell title={template.name} subtitle={[siteName, template.dueTime && `Due ${formatTimeOfDay(template.dueTime)}`].filter(Boolean).join(' · ')} onBack={onBack}>
+    <Shell title={template.name} subtitle={[zoneName, template.dueTime && `Due ${formatTimeOfDay(template.dueTime)}`].filter(Boolean).join(' · ')} onBack={onBack}>
       {!online && <Bubble mood="idle">No signal? No problem. Fill it in and send. It goes when you’re back online.</Bubble>}
 
       {template.fields.map((f) => (
@@ -261,6 +278,7 @@ function Form({ orgId, uid, task, template, siteName, onBack, onSent }: Props & 
 /** Tasks with no fields (e.g. "Pour slab B"): one tap sends an empty report for review. */
 function MarkDone({ orgId, uid, task, onBack, onSent }: Props) {
   const [sending, setSending] = useState(false);
+  const [startedAt] = useState(() => Date.now());
 
   async function send() {
     setSending(true);
@@ -270,10 +288,11 @@ function MarkDone({ orgId, uid, task, onBack, onSent }: Props) {
       taskId: task.id,
       templateId: null,
       authorId: uid,
-      siteId: task.siteId,
+      zoneId: task.zoneId,
       answers: {},
       photos: [],
       gps,
+      startedAt: Timestamp.fromMillis(startedAt),
       capturedAt: Timestamp.now(),
       syncedAt: serverTimestamp(),
     }).catch((err) => console.error('Report was rejected', err));
@@ -308,7 +327,7 @@ function Shell({ title, subtitle, onBack, children }: { title: string; subtitle?
 function Bubble({ children, mood = 'idle' }: { children: ReactNode; mood?: 'idle' | 'worried' }) {
   return (
     <div className="flex items-center gap-3">
-      <Streakee mood={mood} size={64} />
+      <Brix mood={mood} size={64} />
       <p className="flex-1 rounded-card border-2 border-card-line bg-white px-3.5 py-3">{children}</p>
     </div>
   );

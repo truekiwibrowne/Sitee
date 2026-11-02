@@ -3,7 +3,7 @@ import { capXp, isoWeekId, paths, type LeagueTier, type XpEvent } from '@site-st
 
 // XP is only ever written here, by Cloud Functions. Clients can't touch it (see firestore.rules).
 
-/** XP this person has already earned on a site-local day, for the daily cap. */
+/** XP this person has already earned on a project-local day, for the daily cap. */
 export async function xpEarnedOn(orgId: string, userId: string, date: string): Promise<number> {
   const snap = await getFirestore()
     .collection(paths.xpEvents(orgId))
@@ -23,7 +23,9 @@ type Award = {
   source: XpEvent['source'];
   base: number;
   multiplier: number;
-  /** Site-local day the XP counts towards. */
+  /** For reports: stars × earliness × speed, kept on the ledger entry. */
+  breakdown?: Record<string, number>;
+  /** Project-local day the XP counts towards. */
   date: string;
   dailyCap: number;
   earnedToday: number;
@@ -43,6 +45,7 @@ export function awardXp(tx: Transaction, a: Award): number {
     source: a.source,
     base: a.base,
     multiplier: a.multiplier,
+    ...(a.breakdown ? { breakdown: a.breakdown } : {}),
     amount,
     date: a.date,
     taskId: a.taskId,

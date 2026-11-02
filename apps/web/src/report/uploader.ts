@@ -11,7 +11,7 @@ const changes = new EventTarget();
 let running = false;
 
 async function uploadOne(p: StoredPhoto) {
-  const target = ref(storage, photoPath(p.orgId, p.siteId, p.taskId, p.id));
+  const target = ref(storage, photoPath(p.orgId, p.zoneId, p.taskId, p.id));
   try {
     await uploadBytes(target, p.blob, {
       contentType: 'image/jpeg',

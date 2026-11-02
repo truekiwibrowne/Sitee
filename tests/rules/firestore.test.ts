@@ -8,7 +8,7 @@ import {
 } from '@firebase/rules-unit-testing';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
-import { paths } from '@site-streak/shared';
+import { paths, SERVER_ONLY_USER_FIELDS } from '@site-streak/shared';
 
 const ORG = 'demo-org';
 const OTHER_ORG = 'other-org';
@@ -30,8 +30,10 @@ const demoVisitor = () => as('visitor1', { orgId: SANDBOX, role: 'foreman', demo
 const userDoc = (name: string, role: string) => ({
   name,
   email: `${name}@demo.test`,
+  avatar: 'brix',
   role,
-  siteIds: ['site-a'],
+  projectIds: ['riverside'],
+  zoneIds: ['zone-a'],
   xpTotal: 100,
   streak: 3,
   streakFreezes: 0,
@@ -46,7 +48,7 @@ const taskDoc = (over: Record<string, unknown>) => ({
   templateId: 'daily-site-report',
   assigneeId: 'f1',
   assignedById: null,
-  siteId: 'site-a',
+  zoneId: 'zone-a',
   projectId: 'riverside',
   date: '2026-10-30',
   dueAt: null,
@@ -63,10 +65,11 @@ const submission = (over: Record<string, unknown> = {}) => ({
   taskId: 't1',
   templateId: 'daily-site-report',
   authorId: 'f1',
-  siteId: 'site-a',
+  zoneId: 'zone-a',
   answers: { weather: 'Sunny', labour: 12, photos: ['p1', 'p2', 'p3'], delays: null, tomorrow: 'Pour slab B' },
   photos: [],
   gps: null,
+  startedAt: Timestamp.now(),
   capturedAt: Timestamp.now(),
   syncedAt: serverTimestamp(),
   ...over,
@@ -125,16 +128,23 @@ describe('XP and game state are server-only', () => {
     await assertFails(foreman().doc(`${paths.xpEvents(ORG)}/e1`).update({ amount: 5000 }));
   });
 
-  it.each(['xpTotal', 'streak', 'streakFreezes', 'league', 'reviewAccuracy', 'role', 'siteIds'])(
+  it.each(SERVER_ONLY_USER_FIELDS)(
     'a user cannot change their own %s',
     async (field) => {
-      const value = field === 'role' ? 'admin' : field === 'league' ? 'platinum' : field === 'siteIds' ? ['site-b'] : 999;
+      const value =
+        field === 'role' ? 'admin'
+        : field === 'league' ? 'platinum'
+        : field === 'projectIds' || field === 'zoneIds' ? ['other']
+        : field.endsWith('On') || field === 'lastReportDate' ? '2026-01-01'
+        : 999;
       await assertFails(foreman().doc(`${paths.users(ORG)}/f1`).update({ [field]: value }));
     },
   );
 
-  it('a user can change their own name, and only that', async () => {
+  it('a user can change their own name and avatar, and only those', async () => {
     await assertSucceeds(foreman().doc(`${paths.users(ORG)}/f1`).update({ name: 'Grace N.' }));
+    await assertSucceeds(foreman().doc(`${paths.users(ORG)}/f1`).update({ avatar: 'blocx' }));
+    await assertFails(foreman().doc(`${paths.users(ORG)}/f1`).update({ avatar: 'not-a-character' }));
     await assertFails(foreman().doc(`${paths.users(ORG)}/f1`).update({ name: 'Grace', xpTotal: 999 }));
     await assertFails(foreman().doc(`${paths.users(ORG)}/sm1`).update({ name: 'Hacked' }));
   });
@@ -266,6 +276,33 @@ describe('setup collections', () => {
   it('quiz answer keys are hidden from everyone, admins included', async () => {
     await assertFails(admin().doc(`${paths.trainingModules(ORG)}/m1/private/answerKey`).get());
     await assertFails(foreman().doc(`${paths.trainingModules(ORG)}/m1/private/answerKey`).get());
+  });
+
+  it('admins can read their own company’s invites; nobody can write them', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc('invites/mine@demo.test').set({ orgId: ORG, role: 'foreman' });
+      await ctx.firestore().doc('invites/theirs@demo.test').set({ orgId: OTHER_ORG, role: 'foreman' });
+    });
+    await assertSucceeds(admin().doc('invites/mine@demo.test').get());
+    await assertFails(admin().doc('invites/theirs@demo.test').get());
+    await assertFails(siteManager().doc('invites/mine@demo.test').get());
+    await assertFails(admin().doc('invites/new@demo.test').set({ orgId: ORG, role: 'admin' }));
+    // The invitee can't peek either; claiming happens in a Cloud Function.
+    await assertFails(env.authenticatedContext('newbie', { email: 'mine@demo.test' }).firestore().doc('invites/mine@demo.test').get());
+  });
+
+  it('admins can rename the company, and change nothing else on it', async () => {
+    await assertSucceeds(admin().doc(paths.org(ORG)).update({ name: 'New name' }));
+    await assertFails(admin().doc(paths.org(ORG)).update({ dailyXpCap: 99999 }));
+    await assertFails(siteManager().doc(paths.org(ORG)).update({ name: 'Mine' }));
+  });
+
+  it('admins can add projects and zones; zones must belong to a real project', async () => {
+    const project = { name: 'Harbour Tower', timezone: 'Africa/Kampala', address: '', baselineId: null, createdAt: Timestamp.now() };
+    await assertSucceeds(admin().doc(`${paths.projects(ORG)}/harbour`).set(project));
+    await assertSucceeds(admin().doc(`${paths.zones(ORG)}/z1`).set({ name: 'Level 1', projectId: 'harbour', geofence: null, createdAt: Timestamp.now() }));
+    await assertFails(admin().doc(`${paths.zones(ORG)}/z2`).set({ name: 'Ghost', projectId: 'nope', geofence: null, createdAt: Timestamp.now() }));
+    await assertFails(siteManager().doc(`${paths.projects(ORG)}/p2`).set(project));
   });
 
   it('unknown collections are denied', async () => {

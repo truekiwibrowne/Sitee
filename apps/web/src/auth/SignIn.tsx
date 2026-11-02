@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import {
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   GoogleAuthProvider,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
@@ -10,7 +11,7 @@ import {
 import { DEMO_PEOPLE, ROLE_LABEL, type Role } from '@site-streak/shared';
 import { auth } from '../lib/firebase';
 import { Button } from '../ui/Button';
-import { Streakee } from '../ui/Streakee';
+import { Brix } from '../ui/Brix';
 import { startDemo } from './demo';
 
 const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true';
@@ -43,7 +44,7 @@ export function SignIn() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-[390px] flex-col gap-5 px-5 pt-[max(40px,env(safe-area-inset-top))] pb-10">
       <div className="flex flex-col items-center gap-2 text-center">
-        <Streakee size={110} />
+        <Brix size={110} />
         <h1 className="text-3xl font-black">Site Streak</h1>
         <p className="text-muted">Sign in to start today’s tasks.</p>
       </div>
@@ -180,6 +181,8 @@ function EmailPasswordForm({ onError }: { onError: (msg: string) => void }) {
       } else if (mode === 'create') {
         const { user } = await createUserWithEmailAndPassword(auth, email.trim(), password);
         await updateProfile(user, { displayName: name.trim() });
+        // Joining a company by invite needs a confirmed email.
+        void sendEmailVerification(user).catch(console.error);
         // The token listener fired before the name was set; refresh so the app sees it.
         await user.reload();
         await user.getIdToken(true);

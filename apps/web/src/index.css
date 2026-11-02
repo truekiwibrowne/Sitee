@@ -40,7 +40,7 @@
   --shadow-node-coral: 0 6px 0 var(--color-coral-shadow);
   --shadow-node-locked: 0 6px 0 var(--color-locked-shadow);
 
-  /* Streakee's moves use Framer Motion; these are the CSS-only effects. */
+  /* Brix's moves use Framer Motion; these are the CSS-only effects. */
   --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
   --animate-wiggle: wiggle 1.4s ease-in-out infinite;
   --animate-pop: pop 0.45s ease-out both;

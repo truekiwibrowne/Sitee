@@ -7,7 +7,8 @@ initializeApp();
 // require. maxInstances keeps a runaway trigger from scaling up the bill.
 setGlobalOptions({ region: 'us-central1', maxInstances: 10 });
 
-export { openChest } from './chest.js';
+export { cancelInvite, claimInvite, createCompany, inviteMember, removeMember, updateMember } from './admin.js';
 export { hourlyTick } from './daily.js';
+export { openLunchbox } from './lunchbox.js';
 export { startDemo } from './demo.js';
 export { onReview, onSubmission } from './work.js';

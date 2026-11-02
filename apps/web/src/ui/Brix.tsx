@@ -1,9 +1,9 @@
 import { motion, useReducedMotion, type TargetAndTransition } from 'framer-motion';
 
-export type StreakeeMood = 'idle' | 'cheer' | 'worried' | 'sleeping' | 'flip';
+export type BrixMood = 'idle' | 'cheer' | 'worried' | 'sleeping' | 'flip' | 'still';
 
 // Whole-body motion for each mood.
-const bodyMotion: Record<StreakeeMood, TargetAndTransition> = {
+const bodyMotion: Record<BrixMood, TargetAndTransition> = {
   // Little hops while sitting there: a bigger bounce, a small one, then a rest.
   idle: {
     y: [0, -9, 0, -4, 0, 0],
@@ -14,6 +14,8 @@ const bodyMotion: Record<StreakeeMood, TargetAndTransition> = {
   cheer: { y: [0, -22, 0, 0], rotate: [0, -8, 6, 0], scaleY: 1, transition: { duration: 0.7, ease: 'easeOut', repeat: 1 } },
   worried: { y: 0, scaleY: 1, rotate: [0, -3, 3, -3, 0], transition: { duration: 1.2, ease: 'easeInOut', repeat: Infinity, repeatDelay: 1.5 } },
   sleeping: { y: [0, 2, 0], scaleY: [1, 0.98, 1], rotate: 0, transition: { duration: 3.5, ease: 'easeInOut', repeat: Infinity } },
+  // As an avatar: no motion.
+  still: { y: 0, rotate: 0, scaleY: 1 },
   // Loading screen: jump, full backflip, land with a squash.
   flip: {
     y: [0, -36, -36, 0, 0],
@@ -36,24 +38,26 @@ const blink: TargetAndTransition = {
   transition: { duration: 4.2, times: [0, 0.9, 0.93, 0.96, 1], repeat: Infinity },
 };
 
-const mouth: Record<StreakeeMood, { d: string; fill: string }> = {
+const mouth: Record<BrixMood, { d: string; fill: string }> = {
   idle: { d: 'M50 86q10 10 20 0', fill: 'none' },
   cheer: { d: 'M46 84q14 18 28 0z', fill: '#24324A' },
   worried: { d: 'M50 92q10 -8 20 0', fill: 'none' },
   sleeping: { d: 'M54 88h12', fill: 'none' },
   flip: { d: 'M46 84q14 18 28 0z', fill: '#24324A' },
+  still: { d: 'M50 86q10 10 20 0', fill: 'none' },
 };
 
-const describe: Record<StreakeeMood, string> = {
+const describe: Record<BrixMood, string> = {
   idle: 'happy',
   cheer: 'cheering',
   worried: 'worried',
   sleeping: 'asleep',
   flip: 'doing flips',
+  still: 'smiling',
 };
 
-/** Streakee: a brick in a yellow hard hat. Original mascot art; see CLAUDE.md "Look and feel". */
-export function Streakee({ mood = 'idle', size = 92 }: { mood?: StreakeeMood; size?: number }) {
+/** Brix: a brick in a yellow hard hat. Original mascot art; see CLAUDE.md "Look and feel". */
+export function Brix({ mood = 'idle', size = 92 }: { mood?: BrixMood; size?: number }) {
   const still = useReducedMotion() ?? false;
   const m = mouth[mood];
   const eyesOpen = mood !== 'sleeping';
@@ -66,7 +70,7 @@ export function Streakee({ mood = 'idle', size = 92 }: { mood?: StreakeeMood; si
       height={size}
       viewBox="0 0 120 120"
       role="img"
-      aria-label={`Streakee, the hard-hat mascot, ${describe[mood]}`}
+      aria-label={`Brix, the hard-hat mascot, ${describe[mood]}`}
       animate={still ? undefined : bodyMotion[mood]}
       style={{ transformOrigin: '50% 90%', flexShrink: 0, overflow: 'visible' }}
     >

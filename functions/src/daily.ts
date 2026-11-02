@@ -1,33 +1,38 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
-import { FieldValue, getFirestore, Timestamp, type WriteBatch } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore, Timestamp, type DocumentReference } from 'firebase-admin/firestore';
 import {
   isWorkday,
   localDateIn,
   localMinutesIn,
   minutesOf,
   paths,
-  siteSchema,
+  projectSchema,
   taskTemplateSchema,
   userSchema,
   weekdayOf,
   zonedTimeToUtc,
-  type Site,
+  zoneSchema,
+  type Project,
   type Task,
   type TaskTemplate,
   type UserDoc,
+  type Zone,
 } from '@site-streak/shared';
 import { cleanupExpiredDemos } from './demo.js';
 
 // One hourly job does all the scheduled work, so the project uses a single Cloud Scheduler
-// job (three are free per billing account). Each run, for every real (non-demo) site:
-//  1. after local midnight, creates the day's recurring tasks (once per day per site);
-//  2. after a daily report's due time, checks streaks: a missed report uses a streak
-//     freeze if there is one, otherwise the streak resets to 0.
+// job (three are free per billing account). Each run, for every zone in every real company:
+//  1. after local midnight, creates the day's recurring tasks: one per template, per
+//     person, per zone they work in (once per day per zone);
+//  2. after a daily report's due time, checks streaks. A person's day is judged across all
+//     their zones: any missed report uses a streak freeze if they have one, otherwise the
+//     streak resets to 0. Assumes a person's zones share a timezone.
 // It also deletes expired demo sandboxes.
 
 /** Recurring task ids are predictable, so the streak check can find them and re-runs are harmless. */
-export const recurringTaskId = (date: string, templateId: string, uid: string) => `${date}_${templateId}_${uid}`;
+export const recurringTaskId = (date: string, templateId: string, zoneId: string, uid: string) =>
+  `${date}_${templateId}_${zoneId}_${uid}`;
 
 function runsOn(template: TaskTemplate, date: string): boolean {
   switch (template.frequency) {
@@ -42,69 +47,52 @@ function runsOn(template: TaskTemplate, date: string): boolean {
   }
 }
 
-type Person = UserDoc & { id: string };
+const countsForStreak = (t: TaskTemplate) => !!t.dueTime && (t.frequency === 'workday' || t.frequency === 'daily');
 
-function generateTasks(batch: WriteBatch, orgId: string, siteId: string, site: Site, date: string, templates: (TaskTemplate & { id: string })[], people: Person[]) {
-  let created = 0;
-  templates.forEach((t, i) => {
-    if (!runsOn(t, date)) return;
-    for (const p of people) {
-      if (p.role !== t.role || !p.siteIds.includes(siteId)) continue;
-      const task: Omit<Task, 'createdAt'> & { createdAt: FieldValue } = {
-        kind: 'recurring',
-        title: t.name,
-        templateId: t.id,
-        assigneeId: p.id,
-        assignedById: null,
-        siteId,
-        projectId: site.projectId,
-        date,
-        dueAt: t.dueTime ? Timestamp.fromMillis(zonedTimeToUtc(date, t.dueTime, site.timezone)) : null,
-        status: 'open',
-        dependsOn: [],
-        parentTaskId: null,
-        order: 10 + i,
-        xp: t.xp,
-        submissionId: null,
-        createdAt: FieldValue.serverTimestamp(),
-      };
-      batch.set(getFirestore().doc(`${paths.tasks(orgId)}/${recurringTaskId(date, t.id, p.id)}`), task);
-      created++;
-    }
-  });
-  return created;
+type Person = UserDoc & { id: string };
+type Named<T> = T & { id: string };
+
+function newTask(t: Named<TaskTemplate>, p: Person, zoneId: string, zone: Zone, project: Project, date: string, order: number) {
+  const task: Omit<Task, 'createdAt'> & { createdAt: FieldValue } = {
+    kind: 'recurring',
+    title: t.name,
+    templateId: t.id,
+    assigneeId: p.id,
+    assignedById: null,
+    zoneId,
+    projectId: zone.projectId,
+    date,
+    dueAt: t.dueTime ? Timestamp.fromMillis(zonedTimeToUtc(date, t.dueTime, project.timezone)) : null,
+    status: 'open',
+    dependsOn: [],
+    parentTaskId: null,
+    order,
+    xp: t.xp,
+    submissionId: null,
+    createdAt: FieldValue.serverTimestamp(),
+  };
+  return task;
 }
 
-async function checkStreaks(orgId: string, siteId: string, site: Site, date: string, minutesNow: number, templates: (TaskTemplate & { id: string })[], people: Person[]) {
+/** A missed day: a freeze covers it if there's one, otherwise the streak resets. Every missed report is marked. */
+async function judgeDay(orgId: string, userId: string, date: string, taskRefs: DocumentReference[]) {
   const db = getFirestore();
-  let checked = 0;
-  for (const t of templates) {
-    const countsForStreak = t.dueTime && (t.frequency === 'workday' || t.frequency === 'daily');
-    if (!countsForStreak || !runsOn(t, date) || minutesNow <= minutesOf(t.dueTime!)) continue;
-    for (const p of people) {
-      if (p.role !== t.role || !p.siteIds.includes(siteId) || p.streakCheckedOn === date) continue;
-      const taskRef = db.doc(`${paths.tasks(orgId)}/${recurringTaskId(date, t.id, p.id)}`);
-      const userRef = db.doc(`${paths.users(orgId)}/${p.id}`);
-      await db.runTransaction(async (tx) => {
-        const [taskSnap, userSnap] = await Promise.all([tx.get(taskRef), tx.get(userRef)]);
-        const user = userSchema.parse(userSnap.data());
-        if (user.streakCheckedOn === date) return;
-        const status = taskSnap.get('status') as Task['status'] | undefined;
-        const missed = status === 'open' || status === 'late';
-        if (missed && user.streakFreezes > 0) {
-          tx.update(userRef, { streakFreezes: user.streakFreezes - 1, streakCheckedOn: date });
-          tx.update(taskRef, { status: 'excused' });
-        } else if (missed) {
-          tx.update(userRef, { streak: 0, streakCheckedOn: date });
-          tx.update(taskRef, { status: 'late' });
-        } else {
-          tx.update(userRef, { streakCheckedOn: date });
-        }
-      });
-      checked++;
+  const userRef = db.doc(`${paths.users(orgId)}/${userId}`);
+  await db.runTransaction(async (tx) => {
+    const [userSnap, ...taskSnaps] = await Promise.all([tx.get(userRef), ...taskRefs.map((r) => tx.get(r))]);
+    const user = userSchema.parse(userSnap.data());
+    if (user.streakCheckedOn === date) return;
+    const missed = taskSnaps.filter((s) => ['open', 'late'].includes(s.get('status') as string));
+    if (missed.length && user.streakFreezes > 0) {
+      tx.update(userRef, { streakFreezes: user.streakFreezes - 1, streakCheckedOn: date });
+      for (const m of missed) tx.update(m.ref, { status: 'excused' });
+    } else if (missed.length) {
+      tx.update(userRef, { streak: 0, streakCheckedOn: date });
+      for (const m of missed) tx.update(m.ref, { status: 'late' });
+    } else {
+      tx.update(userRef, { streakCheckedOn: date });
     }
-  }
-  return checked;
+  });
 }
 
 /** One pass of the scheduled work. `now` is a parameter so tests can pick the moment. */
@@ -112,32 +100,64 @@ export async function runHourlyTick(now: Date = new Date()) {
   const db = getFirestore();
   const removedSandboxes = await cleanupExpiredDemos(now);
   let created = 0;
-  let checked = 0;
+  let judged = 0;
 
   const orgs = await db.collection('orgs').where('demo', '==', false).get();
   for (const org of orgs.docs) {
-    const [sitesSnap, templatesSnap, usersSnap] = await Promise.all([
-      db.collection(paths.sites(org.id)).get(),
+    const [projectsSnap, zonesSnap, templatesSnap, usersSnap] = await Promise.all([
+      db.collection(paths.projects(org.id)).get(),
+      db.collection(paths.zones(org.id)).get(),
       db.collection(paths.taskTemplates(org.id)).where('active', '==', true).get(),
       db.collection(paths.users(org.id)).get(),
     ]);
+    const projects = new Map(projectsSnap.docs.map((d) => [d.id, projectSchema.parse(d.data())]));
     const templates = templatesSnap.docs.map((d) => ({ ...taskTemplateSchema.parse(d.data()), id: d.id }));
     const people = usersSnap.docs.map((d) => ({ ...userSchema.parse(d.data()), id: d.id }));
+    /** person|date → that day's streak-counting tasks whose due time has passed. */
+    const days = new Map<string, { userId: string; date: string; refs: DocumentReference[] }>();
 
-    for (const siteDoc of sitesSnap.docs) {
-      const site = siteSchema.parse(siteDoc.data());
-      const date = localDateIn(site.timezone, now);
-      if (site.tasksGeneratedFor !== date) {
+    for (const zoneDoc of zonesSnap.docs) {
+      const zone = zoneSchema.parse(zoneDoc.data());
+      const project = projects.get(zone.projectId);
+      if (!project) continue;
+      const date = localDateIn(project.timezone, now);
+      const minutesNow = localMinutesIn(project.timezone, now);
+      const inZone = people.filter((p) => p.zoneIds.includes(zoneDoc.id));
+
+      if (zone.tasksGeneratedFor !== date) {
         const batch = db.batch();
-        created += generateTasks(batch, org.id, siteDoc.id, site, date, templates, people);
-        batch.update(siteDoc.ref, { tasksGeneratedFor: date });
+        templates.forEach((t, i) => {
+          if (!runsOn(t, date)) return;
+          for (const p of inZone.filter((p) => p.role === t.role)) {
+            batch.set(
+              db.doc(`${paths.tasks(org.id)}/${recurringTaskId(date, t.id, zoneDoc.id, p.id)}`),
+              newTask(t, p, zoneDoc.id, zone, project, date, 10 + i),
+            );
+            created++;
+          }
+        });
+        batch.update(zoneDoc.ref, { tasksGeneratedFor: date });
         await batch.commit();
       }
-      checked += await checkStreaks(org.id, siteDoc.id, site, date, localMinutesIn(site.timezone, now), templates, people);
+
+      for (const t of templates) {
+        if (!countsForStreak(t) || !runsOn(t, date) || minutesNow <= minutesOf(t.dueTime!)) continue;
+        for (const p of inZone.filter((p) => p.role === t.role && p.streakCheckedOn !== date)) {
+          const key = `${p.id}|${date}`;
+          const day = days.get(key) ?? { userId: p.id, date, refs: [] };
+          day.refs.push(db.doc(`${paths.tasks(org.id)}/${recurringTaskId(date, t.id, zoneDoc.id, p.id)}`));
+          days.set(key, day);
+        }
+      }
+    }
+
+    for (const day of days.values()) {
+      await judgeDay(org.id, day.userId, day.date, day.refs);
+      judged++;
     }
   }
-  logger.info('Hourly tick', { removedSandboxes, created, checked });
-  return { removedSandboxes, created, checked };
+  logger.info('Hourly tick', { removedSandboxes, created, judged });
+  return { removedSandboxes, created, judged };
 }
 
 export const hourlyTick = onSchedule('every 1 hours', () => runHourlyTick().then(() => undefined));

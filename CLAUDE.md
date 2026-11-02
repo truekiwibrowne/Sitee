@@ -1,6 +1,6 @@
 # Site Streak
 
-Gamified construction site-reporting PWA: Duolingo-style streaks, XP, leagues and a mascot (Streakee) wrapped around daily site reports, QC hold points, reviews, assigned tasks and training. Full plan: `docs/PLAN.md`. Screen mockups: `docs/mockups/` (reference markup + interaction logic, not production code).
+Gamified construction site-reporting PWA: Duolingo-style streaks, XP, leagues and a mascot (Brix) wrapped around daily site reports, QC hold points, reviews, assigned tasks and training. Full plan: `docs/PLAN.md`. Screen mockups: `docs/mockups/` (reference markup + interaction logic, not production code).
 
 ## Stack (don't substitute without asking)
 - React 18 + TypeScript + Vite PWA (vite-plugin-pwa), Tailwind, Framer Motion
@@ -17,13 +17,15 @@ Gamified construction site-reporting PWA: Duolingo-style streaks, XP, leagues an
 ## Repo layout (npm workspaces)
 `apps/web` · `functions` · `packages/shared` (types, zod schemas, XP rules) · `firestore.rules` · `storage.rules` · `docs`
 
-## Roles
-foreman → siteManager → projectManager → constructionManager, plus admin. Each role has recurring tasks, reviews the level below (plus cross-site peer reviews), and assigns tasks and training to the level below. Roles + orgId live in Auth custom claims. All data under `orgs/{orgId}/`.
+## Structure and roles
+Company (org) → Projects → Zones. A project is one construction site (address, timezone); zones are areas within it. All data under `orgs/{orgId}/`.
+foreman → siteManager → projectManager → constructionManager, plus admin. Foremen work in one or more zones (a daily report per zone); site managers cover several zones; project managers several projects. Each role has recurring tasks, reviews the level below (plus cross-site peer reviews), and assigns tasks and training to the level below. Roles + orgId live in Auth custom claims; projectIds/zoneIds on the user doc.
+Anyone signed in can create a company (becoming its admin); admins invite people by email with a role, projects and zones.
 
 ## Non-negotiable rules
 - XP, streaks, unlocks, review routing and training sign-off results are written ONLY by Cloud Functions. Clients never write XP fields or `xpEvents`. Cover with emulator rule tests.
-- XP = base × reviewer stars (1★ ×0.5, 2★ ×1, 3★ ×1.5), daily cap per user.
-- Streak breaks if the daily report misses the template due time (site timezone). Streak freezes for rain days/holidays.
+- XP = base × reviewer stars (1★ ×0.5, 2★ ×1, 3★ ×1.5) × earliness (≥4 h before due ×1.25, ≥2 h ×1.1, on time ×1, late ×0.5) × speed (done within 10 min of opening the form ×1.1), daily cap per user. Weights live in `packages/shared/src/xp.ts`.
+- Streak breaks if a daily report misses the template due time (project timezone). Streak freezes for rain days/holidays.
 - Offline-first: queue submissions and photos; compress photos to ~300 KB; in-app camera with GPS + time.
 - Photos go to Firebase Storage, never the repo.
 
@@ -38,7 +40,10 @@ The PWA will be wrapped with Capacitor for both stores. Build so that's a wrap, 
 "Try the demo" on the sign-in screen: anonymous sign-in, then a Cloud Function copies the demo org into a private sandbox (`orgs/demo-{uid}`) with `demo: true` claims for the chosen role. Sandboxes are isolated and deleted after 24 hrs. Rules must keep demo users inside their own sandbox and cap their uploads. Functions are bundled with esbuild so they can import `packages/shared`.
 
 ## Look and feel
-Friendly and playful, not corporate. Tokens: bg #FFF7E8, ink #24324A, muted #5A6478, yellow #FFC93C (shadow #D69E00), teal #2BB3A3 (shadow #17766C), coral #FF7A59 (shadow #C2410C), locked #E6E1D6. Font: Nunito 700–900. Chunky rounded buttons with a 4px darker bottom shadow that presses down on tap. Streakee = brick in a yellow hard hat (SVG component; idle hops with eyes looking around, cheer, worried, sleeping, flips on the loading screen). Confetti + XP count-up on completion. Respect prefers-reduced-motion. Touch targets ≥ 44px. Mobile-first at 390px. Don't copy Duolingo assets or colours.
+Friendly and playful, not corporate. Tokens: bg #FFF7E8, ink #24324A, muted #5A6478, yellow #FFC93C (shadow #D69E00), teal #2BB3A3 (shadow #17766C), coral #FF7A59 (shadow #C2410C), locked #E6E1D6. Font: Nunito 700–900. Chunky rounded buttons with a 4px darker bottom shadow that presses down on tap. Brix = brick in a yellow hard hat, the guide (SVG component; idle hops with eyes looking around, cheer, worried, sleeping, flips on the loading screen). A cast of construction characters (Blocx the concrete block, more to come) are avatars people pick. The end-of-day reward is a lunchbox, not a chest. Confetti + XP count-up on completion. Respect prefers-reduced-motion. Touch targets ≥ 44px. Mobile-first at 390px. Don't copy Duolingo assets or colours.
+
+## Later (don't build until asked)
+Template builder from each company's own forms · company dashboard with leaderboards · branded PDF export of every report (company logo). See docs/PLAN.md "Decisions".
 
 ## Working style
 - Keep it simple; no over-engineering.

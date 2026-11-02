@@ -24,7 +24,7 @@ Each role has its own recurring tasks, reviews the level below (or a peer), and 
 | Construction manager | Portfolio review, monthly targets | PM monthly reports | Project managers |
 | Admin | Templates, users, sites, baseline import | None | None |
 
-**MVP (pilot on 2 sites):** sign-in and roles, sites and projects, fixed templates (daily report, hold point), Today screen, offline report with photos, site manager review with stars, XP, streaks, weekly league, Streakee mascot with core animations.
+**MVP (pilot on 2 sites):** sign-in and roles, sites and projects, fixed templates (daily report, hold point), Today screen, offline report with photos, site manager review with stars, XP, streaks, weekly league, Brix mascot with core animations.
 
 **Later:** Settings template builder, unlock rules, assigned-task cascade with sub-tasks, cross-site reviews with accuracy scoring, team quests, push notifications, BoQ import, earned value, site health, PDF export, reward store.
 
@@ -44,7 +44,7 @@ Adds four collections: trainingModules, trainingSessions, attendance and compete
 Friendly and playful, built around an original mascot rather than borrowed Duolingo assets.
 
 - **Palette and type:** cream background #FFF7E8, ink #24324A, sunny yellow #FFC93C (primary), teal #2BB3A3 (done), coral #FF7A59 (QC). Nunito font. Chunky rounded buttons with a 4 px bottom shadow that press down on tap.
-- **Streakee the mascot:** a brick in a yellow hard hat. States: idle bob, cheering (task done), worried (streak at risk), sleeping (day off), surprised (Hawk Eye catch). Start as an SVG animated with Framer Motion; move to Rive later for a proper state machine.
+- **Brix the mascot:** a brick in a yellow hard hat. States: idle bob, cheering (task done), worried (streak at risk), sleeping (day off), surprised (Hawk Eye catch). Start as an SVG animated with Framer Motion; move to Rive later for a proper state machine.
 - **Task path:** today's tasks sit on a winding path. Done nodes are teal, the current one pulses, locked ones show who they're waiting on, and a daily chest sits at the end.
 - **Moments of delight:** confetti and an XP count-up on submit, a streak flame that grows at 7, 30 and 100 days, a league promotion animation, light haptics.
 - **Rewards:** badges, streak freezes, league promotions, plus real rewards the admin sets (airtime, PPE, site lunch).
@@ -68,7 +68,7 @@ GitHub repo (code only) ──Actions deploy──▶ Hosting
 
 The phone talks to Firebase directly. Scoring, unlocks and review routing run only in Cloud Functions, triggered by Firestore writes or the scheduler. GitHub holds the code; photos go to Firebase Storage, not the repo.
 
-- **Web app:** React + TypeScript + Vite as a PWA, Tailwind, Framer Motion (Rive later for Streakee). Wrap with Capacitor later if you need app-store builds.
+- **Web app:** React + TypeScript + Vite as a PWA, Tailwind, Framer Motion (Rive later for Brix). Wrap with Capacitor later if you need app-store builds.
 - **Firebase:** Hosting, Auth (phone code login suits site staff), Firestore with offline persistence, Storage, Functions v2, scheduled functions, FCM push, App Check.
 - **GitHub:** monorepo with `apps/web`, `functions` and `packages/shared`. Actions run lint and tests on each PR, deploy a preview channel, and deploy live on merge to main.
 - **Local dev:** Firebase Emulator Suite for everything, including security-rule tests.
@@ -128,7 +128,23 @@ The game only works if the points can't be faked, so scoring lives on the server
 Ship a small MVP to two sites first and only build settings and earned value once people are actually using it. Durations are rough estimates.
 
 1. **Phase 0, setup (about 1 week):** GitHub repo, Firebase project, emulators, CI deploys, sign-in with roles, seed data.
-2. **Phase 1, MVP (4–6 weeks):** fixed templates, Today screen, offline report with photos, site manager review, XP, streaks, weekly league, Streakee and core animations. Pilot on 2 sites.
+2. **Phase 1, MVP (4–6 weeks):** fixed templates, Today screen, offline report with photos, site manager review, XP, streaks, weekly league, Brix and core animations. Pilot on 2 sites.
 3. **Gate:** at least 90% of daily reports on time for 4 weeks of the pilot before moving on.
 4. **Phase 2, workflow (about 4 weeks):** Settings template builder, unlock rules, assigned-task cascade, learning paths with trainer sign-off, cross-site reviews with accuracy, team quests, push notifications.
 5. **Phase 3, progress (4–6 weeks):** BoQ import, quantities, earned value and SPI, site health, PDF export, reward store.
+
+## Decisions (31 Oct 2026)
+
+- **Structure:** Company → Projects → Zones. A project is one construction site (address, timezone); zones are areas within it (Block A, Level 2…). Project managers have several projects, site managers several zones; foremen work in one or more zones and file a daily report per zone.
+- **XP:** base × reviewer stars (1★ ×0.5, 2★ ×1, 3★ ×1.5) × earliness (≥4 h before due ×1.25, ≥2 h ×1.1, on time ×1, late ×0.5) × speed (finished within 10 min of opening the form ×1.1), within the daily cap. Stars decide most of it so rushing doesn't pay.
+- **Characters:** Brix (brick in a hard hat) is the guide. A cast of construction characters (Blocx the concrete block first; more to come, unlocking with streaks) are avatars people pick for leaderboards and profiles.
+- **End-of-day reward:** a lunchbox ("crib box") instead of a chest: XP and a streak freeze.
+- **Sign-in:** Google first; Apple and Microsoft to follow. Email and password behind "Use email instead". No phone sign-in.
+- **Onboarding:** anyone signed in can create a company and becomes its admin; admins invite people by email with a role, projects and zones.
+- **History:** people can open anything they've submitted and see what they sent, the photos and the review.
+
+### Later (recorded, not yet built)
+
+- **Template builder:** company admins build their own report forms (daily site report, toolbox talk, quality checks…) from the templates they already use.
+- **Company dashboard:** leaderboards and other information across projects.
+- **PDF export:** every report as a professionally formatted PDF with the company logo, ready to print and save.

@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Site photos only: orgs/{orgId}/sites/{siteId}/submissions/{submissionId}/{photoId}.jpg
+// Report photos only: orgs/{orgId}/zones/{zoneId}/submissions/{submissionId}/{photoId}.jpg
 // (see photoPath in packages/shared). The submission id is the task id, so uploads are
 // checked against that task in Firestore. Photos are compressed to ~300 KB on the phone.
 
@@ -20,10 +20,11 @@ service firebase.storage {
       return firestore.get(/databases/(default)/documents/orgs/$(orgId)/tasks/$(taskId)).data;
     }
 
-    match /orgs/{orgId}/sites/{siteId}/submissions/{submissionId}/{photoId} {
+    match /orgs/{orgId}/zones/{zoneId}/submissions/{submissionId}/{photoId} {
       allow read: if inOrg(orgId);
 
       // Create only: a photo can't be swapped after upload. No deletes from the phone.
+      // Only for your own task, in that task's zone.
       allow create: if inOrg(orgId)
         && resource == null
         && photoId.matches('[A-Za-z0-9_-]+[.]jpg')
@@ -31,7 +32,7 @@ service firebase.storage {
         && request.resource.size > 0
         && request.resource.size < maxBytes()
         && task(orgId, submissionId).assigneeId == request.auth.uid
-        && task(orgId, submissionId).siteId == siteId;
+        && task(orgId, submissionId).zoneId == zoneId;
     }
   }
 }

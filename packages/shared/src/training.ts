@@ -39,7 +39,7 @@ export const trainingSessionSchema = z.object({
   title: z.string().min(1),
   moduleId: id.nullable(),
   trainerId: id,
-  siteId: id,
+  zoneId: id,
   assignedById: id,
   startsAt: timestamp,
   endsAt: timestamp,

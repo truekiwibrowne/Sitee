@@ -7,7 +7,7 @@ import type { Gps } from '@site-streak/shared';
 export type StoredPhoto = {
   id: string;
   orgId: string;
-  siteId: string;
+  zoneId: string;
   taskId: string;
   fieldId: string;
   blob: Blob;

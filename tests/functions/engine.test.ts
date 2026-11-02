@@ -1,9 +1,11 @@
-// The task engine against the Firestore emulator: the same handlers the triggers call.
-// Run with `npm run test:emulators` (CI does), which starts the emulators first.
+// The task engine and company functions against the emulators: the same code the triggers
+// and callables run. Run with `npm run test:emulators` (CI does), which starts the emulators.
 
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import type { CallableRequest } from 'firebase-functions/v2/https';
 import {
   buildDemoOrg,
   DEMO_PEOPLE,
@@ -16,8 +18,9 @@ import {
 } from '@site-streak/shared';
 import { handleReview, handleSubmission } from '../../functions/src/work.js';
 import { recurringTaskId, runHourlyTick } from '../../functions/src/daily.js';
-import { openChestFor } from '../../functions/src/chest.js';
+import { openLunchboxFor } from '../../functions/src/lunchbox.js';
 import { cleanupExpiredDemos } from '../../functions/src/demo.js';
+import { claimInvite, createCompany, inviteMember, removeMember, updateMember } from '../../functions/src/admin.js';
 
 beforeAll(() => {
   if (!process.env.FIRESTORE_EMULATOR_HOST) throw new Error('Run these inside the emulators: npm run test:emulators');
@@ -26,8 +29,8 @@ beforeAll(() => {
 });
 
 const db = () => getFirestore();
-const DEMO_PEOPLE_BY_ROLE = Object.fromEntries(DEMO_PEOPLE.map((p) => [p.role, p])) as Record<DemoPerson['role'], DemoPerson>;
 const today = () => localDateIn(DEMO_TIMEZONE);
+const DEMO_PEOPLE_BY_ROLE = Object.fromEntries(DEMO_PEOPLE.map((p) => [p.role, p])) as Record<DemoPerson['role'], DemoPerson>;
 let orgCount = 0;
 
 /** A fresh copy of the demo company. Real (not demo) unless `sandbox` is set. */
@@ -50,17 +53,25 @@ async function seedOrg(opts: { sandbox?: boolean; dailyXpCap?: number } = {}) {
   return { orgId, uid };
 }
 
-/** Writes a submission as the phone would, captured at 08:00 site time (on time). */
-async function submit(orgId: string, taskId: string, authorId: string, templateId: string | null, answers: Record<string, unknown> = {}) {
+/** Writes a submission as the phone would. By default: opened 07:55, sent 08:00 site time. */
+async function submit(
+  orgId: string,
+  taskId: string,
+  authorId: string,
+  templateId: string | null,
+  timing: { started?: string; sent?: string } = {},
+) {
+  const at = (time: string) => Timestamp.fromMillis(zonedTimeToUtc(today(), time, DEMO_TIMEZONE));
   await db().doc(`${paths.submissions(orgId)}/${taskId}`).set({
     taskId,
     templateId,
     authorId,
-    siteId: 'site-a',
-    answers,
+    zoneId: 'zone-a',
+    answers: {},
     photos: [],
     gps: null,
-    capturedAt: Timestamp.fromMillis(zonedTimeToUtc(today(), '08:00', DEMO_TIMEZONE)),
+    startedAt: at(timing.started ?? '07:55'),
+    capturedAt: at(timing.sent ?? '08:00'),
     syncedAt: Timestamp.now(),
   });
   await handleSubmission(orgId, taskId);
@@ -69,7 +80,7 @@ async function submit(orgId: string, taskId: string, authorId: string, templateI
 const get = async (path: string) => (await db().doc(path).get()).data() ?? {};
 
 describe('onSubmission', () => {
-  it('marks the task submitted, counts the streak once and routes a review to the site manager', async () => {
+  it('marks the task submitted, counts the streak once and routes a review to the zone’s site manager', async () => {
     const { orgId, uid } = await seedOrg();
     const reportId = `${today()}-report`;
     await submit(orgId, reportId, uid('foreman'), 'daily-site-report');
@@ -80,7 +91,7 @@ describe('onSubmission', () => {
     expect(foreman.lastReportDate).toBe(today());
 
     const reviewTask = await get(`${paths.tasks(orgId)}/review_${reportId}`);
-    expect(reviewTask).toMatchObject({ kind: 'review', assigneeId: uid('siteManager'), status: 'open', submissionId: reportId });
+    expect(reviewTask).toMatchObject({ kind: 'review', assigneeId: uid('siteManager'), zoneId: 'zone-a', status: 'open', submissionId: reportId });
 
     // A retried trigger changes nothing.
     await handleSubmission(orgId, reportId);
@@ -104,11 +115,11 @@ describe('onSubmission', () => {
   });
 });
 
-describe('onReview', () => {
-  async function reviewedReport(stars: 1 | 2 | 3, dailyXpCap?: number) {
+describe('onReview: XP = base × stars × earliness × speed', () => {
+  async function reviewedReport(stars: 1 | 2 | 3, timing: { started?: string; sent?: string } = {}, dailyXpCap?: number) {
     const org = await seedOrg({ dailyXpCap });
     const reportId = `${today()}-report`;
-    await submit(org.orgId, reportId, org.uid('foreman'), 'daily-site-report');
+    await submit(org.orgId, reportId, org.uid('foreman'), 'daily-site-report', timing);
     const reviewId = `review_${reportId}`;
     await db().doc(`${paths.reviews(org.orgId)}/${reviewId}`).set({
       submissionId: reportId,
@@ -126,32 +137,40 @@ describe('onReview', () => {
     return { ...org, reportId, reviewId };
   }
 
-  it('awards base × stars to the author, review XP to the reviewer, and closes both tasks', async () => {
+  it('early and quick with 3 stars: 50 × 1.5 × 1.25 × 1.1 = 103; the reviewer gets 20; both tasks close', async () => {
     const { orgId, uid, reportId, reviewId } = await reviewedReport(3);
-    expect((await get(`${paths.users(orgId)}/${uid('foreman')}`)).xpTotal).toBe(1240 + 75); // 50 × 1.5
+    expect((await get(`${paths.users(orgId)}/${uid('foreman')}`)).xpTotal).toBe(1240 + 103);
     expect((await get(`${paths.users(orgId)}/${uid('siteManager')}`)).xpTotal).toBe(2310 + 20);
-    expect(await get(`${paths.xpEvents(orgId)}/${reviewId}_author`)).toMatchObject({ amount: 75, base: 50, multiplier: 1.5, source: 'review' });
+    expect(await get(`${paths.xpEvents(orgId)}/${reviewId}_author`)).toMatchObject({
+      amount: 103,
+      base: 50,
+      breakdown: { stars: 1.5, earliness: 1.25, speed: 1.1 },
+      source: 'review',
+    });
     expect((await get(`${paths.tasks(orgId)}/${reportId}`)).status).toBe('reviewed');
     expect((await get(`${paths.tasks(orgId)}/${reviewId}`)).status).toBe('reviewed');
 
-    // League: weekly XP goes up and ranks are recomputed.
-    const week = isoWeekId(today());
-    const foremanRow = await get(`${paths.leagueMembers(orgId, week)}/${uid('foreman')}`);
-    expect(foremanRow.weeklyXp).toBe(310 + 75);
-    expect(foremanRow.rank).toBe(2); // 385 now beats the PM's 380; the site manager has 440.
+    // League: weekly XP goes up and ranks are recomputed (413 beats the PM's 380; the site manager has 440).
+    const row = await get(`${paths.leagueMembers(orgId, isoWeekId(today()))}/${uid('foreman')}`);
+    expect(row).toMatchObject({ weeklyXp: 310 + 103, rank: 2 });
 
     // A retried trigger awards nothing more.
     await handleReview(orgId, reviewId);
-    expect((await get(`${paths.users(orgId)}/${uid('foreman')}`)).xpTotal).toBe(1240 + 75);
+    expect((await get(`${paths.users(orgId)}/${uid('foreman')}`)).xpTotal).toBe(1240 + 103);
   });
 
-  it('one star halves the XP', async () => {
+  it('late and slow halves it: 50 × 1 × 0.5 × 1 = 25', async () => {
+    const { orgId, reviewId } = await reviewedReport(2, { started: '18:00', sent: '19:00' });
+    expect(await get(`${paths.xpEvents(orgId)}/${reviewId}_author`)).toMatchObject({ amount: 25, breakdown: { earliness: 0.5, speed: 1 } });
+  });
+
+  it('one star still pays something: 50 × 0.5 × 1.25 × 1.1 = 34', async () => {
     const { orgId, uid } = await reviewedReport(1);
-    expect((await get(`${paths.users(orgId)}/${uid('foreman')}`)).xpTotal).toBe(1240 + 25);
+    expect((await get(`${paths.users(orgId)}/${uid('foreman')}`)).xpTotal).toBe(1240 + 34);
   });
 
   it('respects the daily XP cap', async () => {
-    const { orgId, uid, reviewId } = await reviewedReport(3, 60);
+    const { orgId, uid, reviewId } = await reviewedReport(3, {}, 60);
     expect((await get(`${paths.xpEvents(orgId)}/${reviewId}_author`)).amount).toBe(60);
     expect((await get(`${paths.users(orgId)}/${uid('foreman')}`)).xpTotal).toBe(1240 + 60);
   });
@@ -162,13 +181,15 @@ describe('hourly tick', () => {
   const monday = '2026-11-02';
   const evening = new Date(zonedTimeToUtc(monday, '19:00', DEMO_TIMEZONE));
 
-  it('creates the day’s report task once, then resets the streak when it’s missed', async () => {
+  it('creates a report task per zone once, then resets the streak when one is missed', async () => {
     const { orgId, uid } = await seedOrg();
     await runHourlyTick(evening);
-    const taskPath = `${paths.tasks(orgId)}/${recurringTaskId(monday, 'daily-site-report', uid('foreman'))}`;
+    const taskPath = `${paths.tasks(orgId)}/${recurringTaskId(monday, 'daily-site-report', 'zone-a', uid('foreman'))}`;
     expect((await get(taskPath)).status).toBe('late');
     expect((await get(`${paths.users(orgId)}/${uid('foreman')}`)).streak).toBe(0);
-    expect((await get(`${paths.sites(orgId)}/site-a`)).tasksGeneratedFor).toBe(monday);
+    expect((await get(`${paths.zones(orgId)}/zone-a`)).tasksGeneratedFor).toBe(monday);
+    // The foreman isn't in Block B, so no report there.
+    expect((await db().doc(`${paths.tasks(orgId)}/${recurringTaskId(monday, 'daily-site-report', 'zone-b', uid('foreman'))}`).get()).exists).toBe(false);
 
     // Running again creates nothing new and doesn't re-check.
     await db().doc(`${paths.users(orgId)}/${uid('foreman')}`).update({ streak: 5 });
@@ -176,13 +197,14 @@ describe('hourly tick', () => {
     expect((await get(`${paths.users(orgId)}/${uid('foreman')}`)).streak).toBe(5);
   });
 
-  it('uses a streak freeze instead of resetting, if there is one', async () => {
+  it('a foreman in two zones gets a report for each; one freeze covers the whole day', async () => {
     const { orgId, uid } = await seedOrg();
-    await db().doc(`${paths.users(orgId)}/${uid('foreman')}`).update({ streakFreezes: 1 });
+    await db().doc(`${paths.users(orgId)}/${uid('foreman')}`).update({ zoneIds: ['zone-a', 'zone-b'], streakFreezes: 1 });
     await runHourlyTick(evening);
-    const user = await get(`${paths.users(orgId)}/${uid('foreman')}`);
-    expect(user).toMatchObject({ streak: 12, streakFreezes: 0 });
-    expect((await get(`${paths.tasks(orgId)}/${recurringTaskId(monday, 'daily-site-report', uid('foreman'))}`)).status).toBe('excused');
+    for (const zone of ['zone-a', 'zone-b']) {
+      expect((await get(`${paths.tasks(orgId)}/${recurringTaskId(monday, 'daily-site-report', zone, uid('foreman'))}`)).status).toBe('excused');
+    }
+    expect(await get(`${paths.users(orgId)}/${uid('foreman')}`)).toMatchObject({ streak: 12, streakFreezes: 0 });
   });
 
   it('deletes expired demo sandboxes', async () => {
@@ -194,17 +216,97 @@ describe('hourly tick', () => {
   });
 });
 
-describe('daily chest', () => {
+describe('lunchbox', () => {
   it('opens only when every task is done: +25 XP and a streak freeze, once a day', async () => {
     const { orgId, uid } = await seedOrg();
     const foreman = uid('foreman');
-    await expect(openChestFor(orgId, foreman)).rejects.toThrow(/Finish all/);
+    await expect(openLunchboxFor(orgId, foreman)).rejects.toThrow(/Finish all/);
 
     const tasks = await db().collection(paths.tasks(orgId)).where('assigneeId', '==', foreman).get();
     await Promise.all(tasks.docs.map((d) => d.ref.update({ status: 'reviewed' })));
 
-    expect(await openChestFor(orgId, foreman)).toEqual({ xp: 25, gotFreeze: true });
-    expect(await get(`${paths.users(orgId)}/${foreman}`)).toMatchObject({ xpTotal: 1240 + 25, streakFreezes: 1, chestOpenedOn: today() });
-    await expect(openChestFor(orgId, foreman)).rejects.toThrow(/already opened/);
+    expect(await openLunchboxFor(orgId, foreman)).toEqual({ xp: 25, gotFreeze: true });
+    expect(await get(`${paths.users(orgId)}/${foreman}`)).toMatchObject({ xpTotal: 1240 + 25, streakFreezes: 1, lunchboxOpenedOn: today() });
+    await expect(openLunchboxFor(orgId, foreman)).rejects.toThrow(/already opened/);
+  });
+});
+
+describe('companies and invites', () => {
+  /** A signed-in caller as the callables see them. */
+  function as(uid: string, token: Record<string, unknown>, data: unknown = {}) {
+    return { auth: { uid, token: { firebase: { sign_in_provider: 'password' }, ...token } }, data } as unknown as CallableRequest;
+  }
+  let n = 0;
+  async function account(verified = true) {
+    n++;
+    const email = `person${n}-${Date.now()}@demo.test`;
+    const user = await getAuth().createUser({ email, emailVerified: verified });
+    return { uid: user.uid, email };
+  }
+
+  it('anyone signed in can create a company and becomes its admin, with the default forms', async () => {
+    const me = await account();
+    const { orgId } = await createCompany.run(as(me.uid, { email: me.email, email_verified: true }, { companyName: 'Acme Build', yourName: 'Ana' }));
+    expect(await get(paths.org(orgId))).toMatchObject({ name: 'Acme Build', demo: false });
+    expect(await get(`${paths.users(orgId)}/${me.uid}`)).toMatchObject({ name: 'Ana', role: 'admin', avatar: 'brix' });
+    expect((await db().collection(paths.taskTemplates(orgId)).get()).size).toBe(2);
+    expect((await getAuth().getUser(me.uid)).customClaims).toEqual({ orgId, role: 'admin' });
+  });
+
+  it('demo visitors and people already in a company can’t create one', async () => {
+    const me = await account();
+    await expect(
+      createCompany.run({ auth: { uid: me.uid, token: { firebase: { sign_in_provider: 'anonymous' } } }, data: { companyName: 'X', yourName: 'Y' } } as unknown as CallableRequest),
+    ).rejects.toThrow(/Demo visitors/);
+    await expect(createCompany.run(as(me.uid, { email: me.email, orgId: 'some-org' }, { companyName: 'X', yourName: 'Y' }))).rejects.toThrow(/already in a company/);
+  });
+
+  it('an admin invites someone; they join with a verified email and get the role, projects and zones', async () => {
+    const { orgId, uid } = await seedOrg();
+    const adminToken = { orgId, role: 'admin', email: 'admin@demo.test' };
+    const newbie = await account(true);
+    await inviteMember.run(as(uid('admin'), adminToken, { email: newbie.email, name: 'Nia', role: 'foreman', projectIds: ['riverside'], zoneIds: ['zone-b'] }));
+
+    const result = await claimInvite.run(as(newbie.uid, { email: newbie.email, email_verified: true }));
+    expect(result).toEqual({ orgId, already: false });
+    expect(await get(`${paths.users(orgId)}/${newbie.uid}`)).toMatchObject({ name: 'Nia', role: 'foreman', zoneIds: ['zone-b'], xpTotal: 0 });
+    expect((await getAuth().getUser(newbie.uid)).customClaims).toEqual({ orgId, role: 'foreman' });
+    expect((await db().doc(`invites/${newbie.email}`).get()).exists).toBe(false);
+  });
+
+  it('an unverified email can’t claim an invite, and non-admins can’t invite', async () => {
+    const { orgId, uid } = await seedOrg();
+    const someone = await account(false);
+    await inviteMember.run(as(uid('admin'), { orgId, role: 'admin' }, { email: someone.email, name: 'Sly', role: 'admin', projectIds: [], zoneIds: [] }));
+    await expect(claimInvite.run(as(someone.uid, { email: someone.email, email_verified: false }))).rejects.toThrow(/Confirm your email/);
+    await expect(
+      inviteMember.run(as(uid('siteManager'), { orgId, role: 'siteManager' }, { email: 'x@demo.test', name: 'X', role: 'foreman', projectIds: [], zoneIds: [] })),
+    ).rejects.toThrow(/Only your company admin/);
+  });
+
+  it('invites must use the company’s own projects and zones', async () => {
+    const { orgId, uid } = await seedOrg();
+    await expect(
+      inviteMember.run(as(uid('admin'), { orgId, role: 'admin' }, { email: 'y@demo.test', name: 'Y', role: 'foreman', projectIds: ['someone-elses'], zoneIds: [] })),
+    ).rejects.toThrow(/no longer exists/);
+  });
+
+  it('admins change roles and zones, can’t demote themselves, and can remove people', async () => {
+    const { orgId, uid } = await seedOrg();
+    const admin = as(uid('admin'), { orgId, role: 'admin' });
+    const member = await account();
+    await db().doc(`${paths.users(orgId)}/${member.uid}`).set({ ...(await get(`${paths.users(orgId)}/${uid('foreman')}`)), email: member.email });
+
+    await updateMember.run({ ...admin, data: { uid: member.uid, role: 'siteManager', projectIds: ['riverside'], zoneIds: ['zone-a', 'zone-b'] } } as CallableRequest);
+    expect(await get(`${paths.users(orgId)}/${member.uid}`)).toMatchObject({ role: 'siteManager', zoneIds: ['zone-a', 'zone-b'] });
+    expect((await getAuth().getUser(member.uid)).customClaims).toEqual({ orgId, role: 'siteManager' });
+
+    await expect(
+      updateMember.run({ ...admin, data: { uid: uid('admin'), role: 'foreman', projectIds: [], zoneIds: [] } } as CallableRequest),
+    ).rejects.toThrow(/own admin role/);
+
+    await removeMember.run({ ...admin, data: { uid: member.uid } } as CallableRequest);
+    expect((await db().doc(`${paths.users(orgId)}/${member.uid}`).get()).exists).toBe(false);
+    expect((await getAuth().getUser(member.uid)).customClaims ?? {}).toEqual({});
   });
 });

@@ -52,19 +52,31 @@ type Props = {
   waitingOn: string | null;
   /** A sent report still waiting for signal. */
   pendingSync?: boolean;
+  /** Shown when the person works in more than one zone. */
+  zoneName?: string | null;
   onOpen: () => void;
+  /** For finished tasks with a report: opens what was sent. */
+  onView?: () => void;
 };
 
 /** One stop on the day's winding task path. */
-export function TaskNode({ task, state, tone, icon, offset, waitingOn, pendingSync = false, onOpen }: Props) {
+export function TaskNode({ task, state, tone, icon, offset, waitingOn, pendingSync = false, zoneName, onOpen, onView }: Props) {
   const label = subtitle(task, state, waitingOn, pendingSync);
 
   let circle;
   if (state === 'done') {
-    circle = (
-      <div className="flex h-16 w-[68px] shrink-0 items-center justify-center rounded-full bg-teal shadow-node-teal">
-        <Icon name="check" />
-      </div>
+    const check = <Icon name="check" />;
+    circle = onView ? (
+      <button
+        type="button"
+        onClick={onView}
+        aria-label={`${task.title}, see what you sent`}
+        className="press flex h-16 w-[68px] shrink-0 items-center justify-center rounded-full bg-teal shadow-node-teal"
+      >
+        {check}
+      </button>
+    ) : (
+      <div className="flex h-16 w-[68px] shrink-0 items-center justify-center rounded-full bg-teal shadow-node-teal">{check}</div>
     );
   } else if (state === 'locked' || state === 'excused') {
     circle = (
@@ -93,6 +105,7 @@ export function TaskNode({ task, state, tone, icon, offset, waitingOn, pendingSy
       <div className="flex min-w-0 flex-col items-start gap-1.5">
         <span className={`text-[17px] font-extrabold ${state === 'locked' || state === 'excused' ? 'text-muted' : ''}`}>
           {task.title}
+          {zoneName && <span className="ml-1.5 text-[13px] font-bold text-muted">· {zoneName}</span>}
         </span>
         {state === 'current' ? (
           <button

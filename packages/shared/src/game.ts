@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { id, localDate, timestamp } from './common.js';
 import { leagueTierSchema } from './people.js';
 
-export const XP_SOURCES = ['review', 'reviewGiven', 'chest', 'training', 'quest', 'adjustment'] as const;
+export const XP_SOURCES = ['review', 'reviewGiven', 'lunchbox', 'training', 'quest', 'adjustment'] as const;
 
 // orgs/{orgId}/xpEvents/{eventId} — append-only ledger, written only by Cloud Functions.
 export const xpEventSchema = z.object({
@@ -11,6 +11,8 @@ export const xpEventSchema = z.object({
   /** Base XP before the multiplier. */
   base: z.number().int(),
   multiplier: z.number().nonnegative(),
+  /** For reports: the parts of the multiplier (stars × earliness × speed). */
+  breakdown: z.record(z.string(), z.number()).optional(),
   /** What was actually awarded, after the multiplier and the daily cap. */
   amount: z.number().int(),
   /** Site-local day it counts towards, for the daily cap. */
@@ -36,7 +38,7 @@ export type LeagueMember = z.infer<typeof leagueMemberSchema>;
 // orgs/{orgId}/quests/{questId}
 export const questSchema = z.object({
   title: z.string().min(1),
-  scope: z.enum(['site', 'project', 'org']),
+  scope: z.enum(['zone', 'project', 'org']),
   scopeId: id,
   target: z.number().int().positive(),
   progress: z.number().int().nonnegative(),

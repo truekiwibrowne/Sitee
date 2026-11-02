@@ -44,14 +44,14 @@ beforeEach(async () => {
   await env.clearFirestore();
   await env.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
-    await db.doc(`${paths.tasks(ORG)}/t1`).set({ assigneeId: 'f1', siteId: 'site-a' });
-    await db.doc(`${paths.tasks(SANDBOX)}/t1`).set({ assigneeId: 'visitor1', siteId: 'site-a' });
-    await ctx.storage().ref(photoPath(ORG, 'site-a', 't1', 'existing')).put(bytes(10 * KB), jpeg);
+    await db.doc(`${paths.tasks(ORG)}/t1`).set({ assigneeId: 'f1', zoneId: 'zone-a' });
+    await db.doc(`${paths.tasks(SANDBOX)}/t1`).set({ assigneeId: 'visitor1', zoneId: 'zone-a' });
+    await ctx.storage().ref(photoPath(ORG, 'zone-a', 't1', 'existing')).put(bytes(10 * KB), jpeg);
   });
 });
 
 describe('photo uploads', () => {
-  const myPhoto = photoPath(ORG, 'site-a', 't1', 'p1');
+  const myPhoto = photoPath(ORG, 'zone-a', 't1', 'p1');
 
   it('a foreman can upload a JPEG for their own task', async () => {
     await assertSucceeds(upload(foreman(), myPhoto, 300 * KB));
@@ -59,28 +59,28 @@ describe('photo uploads', () => {
 
   it('only JPEGs', async () => {
     await assertFails(upload(foreman(), myPhoto, 300 * KB, { contentType: 'image/png' }));
-    await assertFails(upload(foreman(), photoPath(ORG, 'site-a', 't1', 'p1').replace('.jpg', '.exe'), 300 * KB));
+    await assertFails(upload(foreman(), photoPath(ORG, 'zone-a', 't1', 'p1').replace('.jpg', '.exe'), 300 * KB));
   });
 
   it('max 1 MB', async () => {
     await assertFails(upload(foreman(), myPhoto, 1100 * KB));
   });
 
-  it("not for someone else's task, the wrong site or another org", async () => {
+  it("not for someone else's task, the wrong zone or another org", async () => {
     await assertFails(upload(otherForeman(), myPhoto, 300 * KB));
-    await assertFails(upload(foreman(), photoPath(ORG, 'site-b', 't1', 'p1'), 300 * KB));
+    await assertFails(upload(foreman(), photoPath(ORG, 'zone-b', 't1', 'p1'), 300 * KB));
     await assertFails(upload(outsider(), myPhoto, 300 * KB));
   });
 
   it('photos cannot be overwritten or deleted', async () => {
-    const existing = photoPath(ORG, 'site-a', 't1', 'existing');
+    const existing = photoPath(ORG, 'zone-a', 't1', 'existing');
     await assertFails(upload(foreman(), existing, 300 * KB));
     await assertFails(foreman().ref(existing).delete());
   });
 
   it('demo visitors are capped at 500 KB and stay in their sandbox', async () => {
-    await assertSucceeds(upload(demoVisitor(), photoPath(SANDBOX, 'site-a', 't1', 'p1'), 300 * KB));
-    await assertFails(upload(demoVisitor(), photoPath(SANDBOX, 'site-a', 't1', 'p2'), 700 * KB));
+    await assertSucceeds(upload(demoVisitor(), photoPath(SANDBOX, 'zone-a', 't1', 'p1'), 300 * KB));
+    await assertFails(upload(demoVisitor(), photoPath(SANDBOX, 'zone-a', 't1', 'p2'), 700 * KB));
     await assertFails(upload(demoVisitor(), myPhoto, 300 * KB));
   });
 
@@ -90,7 +90,7 @@ describe('photo uploads', () => {
 });
 
 describe('photo reads', () => {
-  const existing = photoPath(ORG, 'site-a', 't1', 'existing');
+  const existing = photoPath(ORG, 'zone-a', 't1', 'existing');
 
   it('members of the org can view photos', async () => {
     await assertSucceeds(siteManager().ref(existing).getMetadata());

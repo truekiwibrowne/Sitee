@@ -1,5 +1,6 @@
 export * from './common.js';
 export * from './roles.js';
+export * from './characters.js';
 export * from './xp.js';
 export * from './people.js';
 export * from './templates.js';

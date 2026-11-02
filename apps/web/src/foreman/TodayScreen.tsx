@@ -8,10 +8,11 @@ import {
   localMinutesIn,
   minutesOf,
   paths,
-  siteSchema,
+  projectSchema,
   taskSchema,
   taskTemplateSchema,
   userSchema,
+  zoneSchema,
   type Task,
   type TaskTemplate,
 } from '@site-streak/shared';
@@ -22,10 +23,10 @@ import { useNow } from '../data/useNow';
 import { tapHaptic } from '../device/haptics';
 import { forgetSentReport } from '../report/ReportForm';
 import { usePendingPhotoCount } from '../report/uploader';
-import { Streakee, type StreakeeMood } from '../ui/Streakee';
+import { Brix, type BrixMood } from '../ui/Brix';
 import { Confetti } from '../ui/Confetti';
 import { useCountUp } from '../ui/useCountUp';
-import { DailyChest } from './DailyChest';
+import { Lunchbox } from './Lunchbox';
 import { StatusChips } from './StatusChips';
 import { TaskNode, type NodeIcon, type NodeState, type NodeTone } from './TaskNode';
 
@@ -34,12 +35,12 @@ const PATH_OFFSETS = [10, 64, 104, 64];
 const offsetAt = (i: number) => PATH_OFFSETS[i % PATH_OFFSETS.length]!;
 
 const DAILY_REPORT = 'daily-site-report';
-/** Streakee starts worrying this close to the report's due time. */
+/** Brix starts worrying this close to the report's due time. */
 const WORRY_MINUTES = 120;
 
 type Celebration = { gain: string; message: string } | null;
 
-const callOpenChest = httpsCallable<void, { xp: number; gotFreeze: boolean }>(functions, 'openChest');
+const callOpenLunchbox = httpsCallable<void, { xp: number; gotFreeze: boolean }>(functions, 'openLunchbox');
 
 const isDone = (t: Task) => t.status === 'submitted' || t.status === 'reviewed';
 
@@ -49,12 +50,22 @@ function iconFor(task: Task, template: TaskTemplate | undefined): NodeIcon {
   return 'task';
 }
 
-export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: string; onOpenTask: (task: Task & { id: string }) => void }) {
+type Props = {
+  orgId: string;
+  uid: string;
+  onOpenTask: (task: Task & { id: string }) => void;
+  /** Opens what was sent for a finished task. */
+  onViewSubmission: (submissionId: string) => void;
+};
+
+export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission }: Props) {
   const now = useNow();
   const { data: user } = useDocData(`${paths.users(orgId)}/${uid}`, userSchema);
-  const siteId = user?.siteIds[0];
-  const { data: site } = useDocData(siteId ? `${paths.sites(orgId)}/${siteId}` : null, siteSchema);
-  const today = site ? localDateIn(site.timezone, now) : null;
+  // Due times and "today" follow the project's timezone.
+  const projectId = user?.projectIds[0];
+  const { data: project } = useDocData(projectId ? `${paths.projects(orgId)}/${projectId}` : null, projectSchema);
+  const { data: zones } = useQueryData(collection(db, paths.zones(orgId)), `${orgId}/zones`, zoneSchema);
+  const today = project ? localDateIn(project.timezone, now) : null;
 
   const tasksQuery = today
     ? query(collection(db, paths.tasks(orgId)), where('assigneeId', '==', uid), where('date', '==', today))
@@ -94,7 +105,7 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
   const tasks = [...withSent].sort((a, b) => a.order - b.order);
   const templateById = new Map(templates.map((t) => [t.id, t]));
   const pendingPhotos = usePendingPhotoCount();
-  // Excused tasks (e.g. a streak freeze covered them) count as done for the chest.
+  // Excused tasks (e.g. a streak freeze covered them) count as done for the lunchbox.
   const doneCount = tasks.filter((t) => isDone(t) || t.status === 'excused').length;
   const current = tasks.find((t) => t.status === 'open' || t.status === 'late');
 
@@ -102,32 +113,32 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
   const [celebration, setCelebration] = useState<Celebration>(null);
   const [note, setNote] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
-  const chestOpened = !!today && user?.chestOpenedOn === today;
+  const lunchboxOpened = !!today && user?.lunchboxOpenedOn === today;
 
-  async function openTodaysChest() {
+  async function openTodaysLunchbox() {
     setOpening(true);
     setNote(null);
     try {
-      await callOpenChest();
+      await callOpenLunchbox();
     } catch (err) {
-      console.error('Chest did not open', err);
-      setNote('The chest is stuck! Check your signal and tap it again.');
+      console.error('Lunchbox did not open', err);
+      setNote('The lunchbox lid is stuck! Check your signal and tap it again.');
     } finally {
       setOpening(false);
     }
   }
 
   // Celebrate when a task flips to done or XP arrives (both are written by Cloud Functions).
-  const seen = useRef<{ statuses: Map<string, Task['status']>; xp?: number; chest: boolean } | null>(null);
+  const seen = useRef<{ statuses: Map<string, Task['status']>; xp?: number; lunchbox: boolean } | null>(null);
   useEffect(() => {
     if (!user || tasksLoading) return;
     const previous = seen.current;
-    seen.current = { statuses: new Map(withSent.map((t) => [t.id, t.status])), xp: user.xpTotal, chest: chestOpened };
+    seen.current = { statuses: new Map(withSent.map((t) => [t.id, t.status])), xp: user.xpTotal, lunchbox: lunchboxOpened };
     if (!previous) return; // First load: nothing to celebrate.
 
-    if (chestOpened && !previous.chest) {
+    if (lunchboxOpened && !previous.lunchbox) {
       tapHaptic();
-      setCelebration({ gain: `+${user.xpTotal - (previous.xp ?? user.xpTotal)} XP`, message: 'Chest opened! XP and a streak freeze for rainy days.' });
+      setCelebration({ gain: `+${user.xpTotal - (previous.xp ?? user.xpTotal)} XP`, message: 'Smoko! XP and a streak freeze for rainy days.' });
       return;
     }
 
@@ -146,7 +157,7 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
           : `${finished.title} done. Nice work!`
         : `+${xpGain} XP landed. Your work was reviewed!`,
     });
-  }, [user, withSent, sent, tasksLoading, chestOpened]);
+  }, [user, withSent, sent, tasksLoading, lunchboxOpened]);
 
   useEffect(() => {
     if (!celebration) return;
@@ -154,22 +165,22 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
     return () => clearTimeout(timer);
   }, [celebration]);
 
-  if (!user || !site) {
+  if (!user || !project) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <Streakee mood="idle" />
+        <Brix mood="idle" />
       </div>
     );
   }
 
-  // Streakee's message and mood for the day so far.
+  // Brix's message and mood for the day so far.
   const firstName = user.name.split(' ')[0];
   const report = tasks.find((t) => t.templateId === DAILY_REPORT);
   const dueTime = templateById.get(DAILY_REPORT)?.dueTime;
-  const minutesLeft = dueTime ? minutesOf(dueTime) - localMinutesIn(site.timezone, now) : null;
+  const minutesLeft = dueTime ? minutesOf(dueTime) - localMinutesIn(project.timezone, now) : null;
   const left = tasks.length - doneCount;
 
-  let mood: StreakeeMood = 'idle';
+  let mood: BrixMood = 'idle';
   let message: string;
   if (tasksLoading) {
     message = 'Getting your day ready…';
@@ -177,9 +188,9 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
     mood = 'sleeping';
     message = `No tasks today, ${firstName}. Enjoy the quiet!`;
   } else if (left === 0) {
-    message = chestOpened
+    message = lunchboxOpened
       ? `All done for today, ${firstName}. See you tomorrow!`
-      : `All done for today, ${firstName}! Your daily chest is ready.`;
+      : `All done for today, ${firstName}! Your lunchbox is ready.`;
   } else if (report && !isDone(report) && (report.status === 'late' || (minutesLeft !== null && minutesLeft <= 0))) {
     mood = 'worried';
     message = `Your site report is late! Send it now to save your ${user.streak}-day streak.`;
@@ -204,6 +215,10 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
     return t === current ? 'current' : 'open';
   }
 
+  function zoneName(zoneId: string) {
+    return zones.find((z) => z.id === zoneId)?.name ?? null;
+  }
+
   function toneFor(t: Task): NodeTone {
     return templateById.get(t.templateId ?? '')?.frequency === 'perHoldPoint' ? 'coral' : 'yellow';
   }
@@ -218,7 +233,7 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
       )}
 
       <div className="relative flex items-center gap-2.5">
-        <Streakee mood={mood} />
+        <Brix mood={mood} />
         <p className="flex-1 rounded-card border-2 border-card-line bg-white px-3.5 py-3 text-[15px] leading-snug" aria-live="polite">
           {message}
         </p>
@@ -240,17 +255,19 @@ export function TodayScreen({ orgId, uid, onOpenTask }: { orgId: string; uid: st
             offset={offsetAt(i)}
             waitingOn={t.dependsOn.map((id) => tasks.find((d) => d.id === id)?.title).find(Boolean) ?? null}
             pendingSync={sent.get(t.id) === true}
+            zoneName={user.zoneIds.length > 1 ? zoneName(t.zoneId) : null}
             onOpen={() => onOpenTask(t)}
+            onView={sent.has(t.id) || t.submissionId ? () => onViewSubmission(t.submissionId ?? t.id) : undefined}
           />
         ))}
         {tasks.length > 0 && (
-          <DailyChest
+          <Lunchbox
             done={doneCount}
             total={tasks.length}
-            opened={chestOpened}
+            opened={lunchboxOpened}
             opening={opening}
             offset={offsetAt(tasks.length)}
-            onOpen={() => void openTodaysChest()}
+            onOpen={() => void openTodaysLunchbox()}
           />
         )}
       </div>

@@ -6,7 +6,7 @@ const org = (orgId: string) => `orgs/${orgId}`;
 export const paths = {
   org,
   projects: (orgId: string) => `${org(orgId)}/projects`,
-  sites: (orgId: string) => `${org(orgId)}/sites`,
+  zones: (orgId: string) => `${org(orgId)}/zones`,
   users: (orgId: string) => `${org(orgId)}/users`,
   taskTemplates: (orgId: string) => `${org(orgId)}/taskTemplates`,
   tasks: (orgId: string) => `${org(orgId)}/tasks`,
@@ -23,6 +23,9 @@ export const paths = {
   progressEntries: (orgId: string) => `${org(orgId)}/progressEntries`,
 } as const;
 
-/** Storage path for a site photo. Photos never go in the repo. */
-export const photoPath = (orgId: string, siteId: string, submissionId: string, photoId: string) =>
-  `orgs/${orgId}/sites/${siteId}/submissions/${submissionId}/${photoId}.jpg`;
+/** Root collection of pending invites, keyed by lower-case email (the invitee doesn't know the org yet). */
+export const invitePath = (email: string) => `invites/${email.trim().toLowerCase()}`;
+
+/** Storage path for a report photo. Photos never go in the repo. */
+export const photoPath = (orgId: string, zoneId: string, submissionId: string, photoId: string) =>
+  `orgs/${orgId}/zones/${zoneId}/submissions/${submissionId}/${photoId}.jpg`;

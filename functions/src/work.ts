@@ -9,15 +9,17 @@ import {
   minutesOf,
   orgSchema,
   paths,
+  projectSchema,
+  reportXpMultiplier,
   REVIEW_XP,
   reviewSchema,
-  siteSchema,
-  STAR_MULTIPLIER,
   submissionSchema,
   taskSchema,
   taskTemplateSchema,
   userSchema,
+  zonedTimeToUtc,
   type Review,
+  type Submission,
   type Task,
 } from '@site-streak/shared';
 import { awardXp, rerankLeague, xpEarnedOn } from './xp.js';
@@ -31,6 +33,12 @@ const LATE_SYNC_MS = 24 * 60 * 60 * 1000;
 
 /** Demo sandboxes' made-up colleagues have ids like "demo-{uid}-siteManager". */
 const isDemoColleague = (orgId: string, uid: string) => uid.startsWith(`${orgId}-`);
+
+/** When a report counts as sent: when it was captured, unless it synced more than a day later. */
+function sentAt(sub: Submission): Date {
+  const captured = sub.capturedAt.toMillis();
+  return new Date(sub.syncedAt.toMillis() - captured > LATE_SYNC_MS ? sub.syncedAt.toMillis() : captured);
+}
 
 export async function handleSubmission(orgId: string, submissionId: string) {
   const db = getFirestore();
@@ -48,15 +56,15 @@ export async function handleSubmission(orgId: string, submissionId: string) {
     const task = taskSchema.parse(taskSnap.data());
     if (task.status !== 'open' && task.status !== 'late') return null; // Already handled.
     const org = orgSchema.parse(orgSnap.data());
-    const [templateSnap, siteSnap, authorSnap, siteMembers, dependents] = await Promise.all([
+    const [templateSnap, projectSnap, authorSnap, zoneMembers, dependents] = await Promise.all([
       task.templateId ? tx.get(db.doc(`${paths.taskTemplates(orgId)}/${task.templateId}`)) : Promise.resolve(null),
-      tx.get(db.doc(`${paths.sites(orgId)}/${task.siteId}`)),
+      tx.get(db.doc(`${paths.projects(orgId)}/${task.projectId}`)),
       tx.get(db.doc(`${paths.users(orgId)}/${sub.authorId}`)),
-      tx.get(db.collection(paths.users(orgId)).where('siteIds', 'array-contains', task.siteId)),
+      tx.get(db.collection(paths.users(orgId)).where('zoneIds', 'array-contains', task.zoneId)),
       tx.get(db.collection(paths.tasks(orgId)).where('dependsOn', 'array-contains', sub.taskId)),
     ]);
     const template = templateSnap ? taskTemplateSchema.parse(templateSnap.data()) : null;
-    const site = siteSchema.parse(siteSnap.data());
+    const { timezone } = projectSchema.parse(projectSnap.data());
     const author = userSchema.parse(authorSnap.data());
 
     // A dependent unlocks once all of its prerequisites are done; read the others now.
@@ -77,14 +85,13 @@ export async function handleSubmission(orgId: string, submissionId: string) {
     // Writes.
     tx.update(taskRef, { status: 'submitted', submissionId });
 
-    // Streak: an on-time daily report counts once per day. Long-offline reports use their sync time.
-    const capturedMs = sub.capturedAt.toMillis();
-    const when = new Date(sub.syncedAt.toMillis() - capturedMs > LATE_SYNC_MS ? sub.syncedAt.toMillis() : capturedMs);
+    // Streak: an on-time daily report counts once per day (whichever zone it's for).
+    const when = sentAt(sub);
     const countsForStreak = template?.dueTime && (template.frequency === 'workday' || template.frequency === 'daily');
     const onTime =
       template?.dueTime &&
-      localDateIn(site.timezone, when) === task.date &&
-      localMinutesIn(site.timezone, when) <= minutesOf(template.dueTime);
+      localDateIn(timezone, when) === task.date &&
+      localMinutesIn(timezone, when) <= minutesOf(template.dueTime);
     if (countsForStreak && onTime && author.lastReportDate !== task.date) {
       tx.update(authorSnap.ref, { streak: author.streak + 1, lastReportDate: task.date });
     }
@@ -95,10 +102,10 @@ export async function handleSubmission(orgId: string, submissionId: string) {
       if (d.get('status') === 'locked' && ready) tx.update(d.ref, { status: 'open' });
     }
 
-    // Route a review to the site's site manager.
-    const reviewer = siteMembers.docs.find((m) => m.get('role') === 'siteManager' && m.id !== sub.authorId);
+    // Route a review to a site manager who covers this zone.
+    const reviewer = zoneMembers.docs.find((m) => m.get('role') === 'siteManager' && m.id !== sub.authorId);
     if (!reviewer) {
-      logger.warn('No site manager to review this report', { orgId, siteId: task.siteId });
+      logger.warn('No site manager covers this zone', { orgId, zoneId: task.zoneId });
       return { reviewTaskId: null, reviewerId: null, demo: org.demo };
     }
     const reviewTaskId = `review_${sub.taskId}`;
@@ -108,7 +115,7 @@ export async function handleSubmission(orgId: string, submissionId: string) {
       templateId: null,
       assigneeId: reviewer.id,
       assignedById: null,
-      siteId: task.siteId,
+      zoneId: task.zoneId,
       projectId: task.projectId,
       date: task.date,
       dueAt: null,
@@ -152,8 +159,23 @@ export async function handleReview(orgId: string, reviewId: string) {
   const reviewTaskRef = db.doc(`${paths.tasks(orgId)}/${reviewId}`);
   const authorTaskRef = db.doc(`${paths.tasks(orgId)}/${review.taskId}`);
 
+  // XP timing: how early it was sent (vs the template's due time) and how fast it was filled in.
+  const authorTask = taskSchema.parse((await authorTaskRef.get()).data());
+  const date = authorTask.date;
+  const [subSnap, templateSnap, projectSnap] = await Promise.all([
+    db.doc(`${paths.submissions(orgId)}/${review.submissionId}`).get(),
+    authorTask.templateId ? db.doc(`${paths.taskTemplates(orgId)}/${authorTask.templateId}`).get() : Promise.resolve(null),
+    db.doc(`${paths.projects(orgId)}/${authorTask.projectId}`).get(),
+  ]);
+  const sub = submissionSchema.parse(subSnap.data());
+  const dueTime = templateSnap ? taskTemplateSchema.parse(templateSnap.data()).dueTime : null;
+  const { timezone } = projectSchema.parse(projectSnap.data());
+  const minutesBeforeDue = dueTime
+    ? Math.floor((zonedTimeToUtc(date, dueTime, timezone) - sentAt(sub).getTime()) / 60_000)
+    : null;
+  const xp = reportXpMultiplier(review.stars, minutesBeforeDue, sub.startedAt.toMillis(), sub.capturedAt.toMillis());
+
   // The daily cap needs today's totals; aggregations can't run inside the transaction.
-  const date = taskSchema.parse((await authorTaskRef.get()).data()).date;
   const [authorEarned, reviewerEarned] = await Promise.all([
     xpEarnedOn(orgId, review.authorId, date),
     xpEarnedOn(orgId, review.reviewerId, date),
@@ -169,7 +191,7 @@ export async function handleReview(orgId: string, reviewId: string) {
     ]);
     const reviewTask = taskSchema.parse(reviewTaskSnap.data());
     if (reviewTask.status === 'reviewed') return null; // Already handled.
-    const authorTask = taskSchema.parse(authorTaskSnap.data());
+    const task = taskSchema.parse(authorTaskSnap.data());
     const org = orgSchema.parse(orgSnap.data());
     const author = userSchema.parse(authorSnap.data());
     const reviewer = userSchema.parse(reviewerSnap.data());
@@ -181,8 +203,9 @@ export async function handleReview(orgId: string, reviewId: string) {
       userId: review.authorId,
       tier: author.league,
       source: 'review',
-      base: authorTask.xp,
-      multiplier: STAR_MULTIPLIER[review.stars],
+      base: task.xp,
+      multiplier: xp.multiplier,
+      breakdown: xp.breakdown,
       earnedToday: authorEarned,
       taskId: review.taskId,
     });

@@ -19,7 +19,7 @@ export type BoqItem = z.infer<typeof boqItemSchema>;
 // orgs/{orgId}/progressEntries/{entryId}
 export const progressEntrySchema = z.object({
   boqItemId: id,
-  siteId: id,
+  zoneId: id,
   submissionId: id.nullable(),
   qtyInstalled: z.number().positive(),
   loggedById: id,

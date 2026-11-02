@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Streakee } from '../ui/Streakee';
+import { Brix } from '../ui/Brix';
 
 /** How long the launch screen shows at minimum. */
 export const SPLASH_MS = 4000;
@@ -36,12 +36,12 @@ export function useSplash(busy: boolean): boolean {
   return busy || !minElapsed;
 }
 
-/** Launch screen: Streakee doing flips over a loading bar. */
+/** Launch screen: Brix doing flips over a loading bar. */
 export function Splash() {
   const still = useReducedMotion() ?? false;
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-7 px-10" aria-busy="true" aria-label="Loading Site Streak">
-      <Streakee mood="flip" size={120} />
+      <Brix mood="flip" size={120} />
       <div className="flex w-full max-w-[220px] flex-col items-center gap-3">
         <h1 className="text-2xl font-black">Site Streak</h1>
         {/* The bar fills over the minimum splash time; later it can show real loading progress. */}
