@@ -58,7 +58,7 @@ service cloud.firestore {
           && request.resource.data.name.size() > 0
           && request.resource.data.name.size() <= 80
           // Keep in step with CHARACTERS in packages/shared/src/characters.ts.
-          && request.resource.data.avatar in ['brix', 'blocx'];
+          && request.resource.data.avatar in ['brix', 'blocx', 'plank', 'bolt', 'mixa', 'cona'];
       }
 
       // Admin-managed setup (the admin screens).

@@ -16,7 +16,8 @@ export const taskSchema = z.object({
   assigneeId: id,
   /** Null when the daily scheduler created it. */
   assignedById: id.nullable(),
-  zoneId: id,
+  /** Null for project-level tasks (e.g. a project manager's monthly audit). */
+  zoneId: id.nullable(),
   projectId: id,
   /** Project-local day the task belongs to. */
   date: localDate,
@@ -52,7 +53,7 @@ export const submissionSchema = z.object({
   taskId: id,
   templateId: id.nullable(),
   authorId: id,
-  zoneId: id,
+  zoneId: id.nullable(),
   /** Validate against the template with answersSchemaFor(template.fields). */
   answers: z.record(z.string(), z.union([z.string(), z.number(), z.array(id), z.null()])),
   photos: z.array(photoSchema),

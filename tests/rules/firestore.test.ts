@@ -8,7 +8,7 @@ import {
 } from '@firebase/rules-unit-testing';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
-import { paths, SERVER_ONLY_USER_FIELDS } from '@site-streak/shared';
+import { CHARACTERS, paths, SERVER_ONLY_USER_FIELDS } from '@site-streak/shared';
 
 const ORG = 'demo-org';
 const OTHER_ORG = 'other-org';
@@ -144,6 +144,7 @@ describe('XP and game state are server-only', () => {
   it('a user can change their own name and avatar, and only those', async () => {
     await assertSucceeds(foreman().doc(`${paths.users(ORG)}/f1`).update({ name: 'Grace N.' }));
     await assertSucceeds(foreman().doc(`${paths.users(ORG)}/f1`).update({ avatar: 'blocx' }));
+    for (const avatar of CHARACTERS) await assertSucceeds(foreman().doc(`${paths.users(ORG)}/f1`).update({ avatar }));
     await assertFails(foreman().doc(`${paths.users(ORG)}/f1`).update({ avatar: 'not-a-character' }));
     await assertFails(foreman().doc(`${paths.users(ORG)}/f1`).update({ name: 'Grace', xpTotal: 999 }));
     await assertFails(foreman().doc(`${paths.users(ORG)}/sm1`).update({ name: 'Hacked' }));

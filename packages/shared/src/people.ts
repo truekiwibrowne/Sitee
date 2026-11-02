@@ -32,6 +32,8 @@ export const projectSchema = z.object({
   address: z.string(),
   /** BoQ baseline import (Phase 3). */
   baselineId: id.nullable(),
+  /** Set by the hourly job once it has created this project's project-level tasks for that day. */
+  tasksGeneratedFor: z.iso.date().optional(),
   createdAt: timestamp,
 });
 export type Project = z.infer<typeof projectSchema>;

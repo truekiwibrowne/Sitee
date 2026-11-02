@@ -78,6 +78,15 @@ describe('photo uploads', () => {
     await assertFails(foreman().ref(existing).delete());
   });
 
+  it('project-level tasks (no zone) put photos under zones/project', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc(`${paths.tasks(ORG)}/audit1`).set({ assigneeId: 'pm1', zoneId: null });
+    });
+    const pm = storageAs('pm1', { orgId: ORG, role: 'projectManager' });
+    await assertSucceeds(upload(pm, photoPath(ORG, null, 'audit1', 'p1'), 100 * KB));
+    await assertFails(upload(pm, photoPath(ORG, 'zone-a', 'audit1', 'p2'), 100 * KB));
+  });
+
   it('demo visitors are capped at 500 KB and stay in their sandbox', async () => {
     await assertSucceeds(upload(demoVisitor(), photoPath(SANDBOX, 'zone-a', 't1', 'p1'), 300 * KB));
     await assertFails(upload(demoVisitor(), photoPath(SANDBOX, 'zone-a', 't1', 'p2'), 700 * KB));

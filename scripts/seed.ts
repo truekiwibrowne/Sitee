@@ -42,7 +42,7 @@ async function upsertAuthUser(p: DemoPerson) {
 }
 
 async function seed() {
-  const docs = buildDemoOrg({ orgId: ORG_ID, now: Timestamp.now(), uidFor: seedUid });
+  const docs = buildDemoOrg({ orgId: ORG_ID, now: Timestamp.now(), uidFor: seedUid, toTimestamp: (ms) => Timestamp.fromMillis(ms) });
   const batch = db.batch();
   for (const d of docs) batch.set(db.doc(d.path), d.data);
   await batch.commit();

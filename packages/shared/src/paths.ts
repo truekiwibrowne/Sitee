@@ -26,6 +26,9 @@ export const paths = {
 /** Root collection of pending invites, keyed by lower-case email (the invitee doesn't know the org yet). */
 export const invitePath = (email: string) => `invites/${email.trim().toLowerCase()}`;
 
+/** Path segment for project-level tasks, which have no zone. Storage rules expect it. */
+export const NO_ZONE = 'project';
+
 /** Storage path for a report photo. Photos never go in the repo. */
-export const photoPath = (orgId: string, zoneId: string, submissionId: string, photoId: string) =>
-  `orgs/${orgId}/zones/${zoneId}/submissions/${submissionId}/${photoId}.jpg`;
+export const photoPath = (orgId: string, zoneId: string | null, submissionId: string, photoId: string) =>
+  `orgs/${orgId}/zones/${zoneId ?? NO_ZONE}/submissions/${submissionId}/${photoId}.jpg`;

@@ -66,6 +66,7 @@ export const startDemo = onCall(async (request) => {
     now,
     expiresAt: Timestamp.fromMillis(now.toMillis() + SANDBOX_HOURS * 60 * 60 * 1000),
     timeZone: validTimeZone(data?.timeZone),
+    toTimestamp: (ms) => Timestamp.fromMillis(ms),
     // The visitor plays the chosen role; everyone else is a made-up colleague.
     uidFor: (p) => (p.role === role ? auth.uid : `${orgId}-${p.key}`),
   });

@@ -1,12 +1,12 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { orgSchema, paths, projectSchema, ROLE_LABEL, taskTemplateSchema, zoneSchema } from '@site-streak/shared';
+import { orgSchema, paths, projectSchema, zoneSchema } from '@site-streak/shared';
 import { db } from '../lib/firebase';
 import { useDocData, useQueryData } from '../data/useFirestore';
 import { Button } from '../ui/Button';
 import { ErrorNote, inputClass, TextField } from '../ui/Field';
 
-// Admin: the company's name, its projects and their zones, and its forms.
+// Admin: the company's name, and its projects and their zones.
 
 const deviceTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const timeZones = Intl.supportedValuesOf('timeZone');
@@ -114,7 +114,6 @@ function AddProject({ orgId, onDone }: { orgId: string; onDone: () => void }) {
 export function CompanyScreen({ orgId }: { orgId: string }) {
   const { data: projects } = useQueryData(collection(db, paths.projects(orgId)), `${orgId}/projects`, projectSchema);
   const { data: zones } = useQueryData(collection(db, paths.zones(orgId)), `${orgId}/zones`, zoneSchema);
-  const { data: templates } = useQueryData(collection(db, paths.taskTemplates(orgId)), `${orgId}/templates`, taskTemplateSchema);
   const [adding, setAdding] = useState(false);
 
   return (
@@ -156,19 +155,6 @@ export function CompanyScreen({ orgId }: { orgId: string }) {
         )}
       </Section>
 
-      <Section title="Forms">
-        <ul className="flex flex-col gap-2">
-          {templates.map((t) => (
-            <li key={t.id} className="rounded-card border-2 border-card-line bg-white px-4 py-3">
-              <span className="block font-black">{t.name}</span>
-              <span className="block text-sm text-muted">
-                {ROLE_LABEL[t.role]} · {t.fields.length} fields · {t.xp} XP
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="text-sm text-muted">Building forms from your own templates is coming. For now every company starts with these.</p>
-      </Section>
     </div>
   );
 }

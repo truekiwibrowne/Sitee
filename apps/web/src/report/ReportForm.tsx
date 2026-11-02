@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { doc, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore';
 import {
   answersSchemaFor,
-  formatTimeOfDay,
   paths,
   photoPath,
   zoneSchema,
@@ -229,7 +228,7 @@ function Form({ orgId, uid, task, template, zoneName, onBack, onSent }: Props & 
   const missing = errors.size;
 
   return (
-    <Shell title={template.name} subtitle={[zoneName, template.dueTime && `Due ${formatTimeOfDay(template.dueTime)}`].filter(Boolean).join(' · ')} onBack={onBack}>
+    <Shell title={template.name} subtitle={[zoneName, task.dueAt && `Due ${new Date(task.dueAt.toMillis()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`].filter(Boolean).join(' · ')} onBack={onBack}>
       {!online && <Bubble mood="idle">No signal? No problem. Fill it in and send. It goes when you’re back online.</Bubble>}
 
       {template.fields.map((f) => (

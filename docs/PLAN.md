@@ -145,6 +145,14 @@ Ship a small MVP to two sites first and only build settings and earned value onc
 
 ### Later (recorded, not yet built)
 
-- **Template builder:** company admins build their own report forms (daily site report, toolbox talk, quality checks…) from the templates they already use.
+- **Template builder:** built (Nov 2026) as the admin Forms tab with ISO-aligned starters. Still to do: importing a company's existing forms (PDF/Word), and assigning "as needed" forms by hand.
+- **Earned value report (proposed 2 Nov 2026):** a simpler way in than the BoQ flow under "Progress and earned value"; decide between them, or combine them, when this is built.
+  - *Baseline:* per project, work packages with budget, planned start and finish (straight-line planned progress), optional zone; project currency. Small jobs use one "Whole project" item.
+  - *Form:* a new "Earned value" question type plus an "Earned value report" starter (ISO 21508), default project manager weekly Friday 16:00, checked by the construction manager.
+  - *Filling in:* per package, % complete and cost to date; the app shows PV, EV, AC, SPI, CPI and forecast final cost (budget ÷ CPI) live, with totals. % can't drop without a note, nothing over 100%, big jumps flagged.
+  - *Server:* onSubmission recalculates everything from the baseline and saves a snapshot per period (feeds dashboard charts and PDFs).
+  - *Review and XP:* the superior sees this period against the last, the indices and the flags, answers "Progress matches site?" and "Costs match the accounts?", and gives stars. XP rewards honest, on-time reporting, not good numbers; no speed bonus on EV forms.
+  - *Privacy:* budgets and costs visible only to project managers and above, plus admin (enforced in rules, with tests).
+  - *Option:* site managers report % complete per zone (no costs) and the PM's report starts from those figures.
 - **Company dashboard:** leaderboards and other information across projects.
 - **PDF export:** every report as a professionally formatted PDF with the company logo, ready to print and save.

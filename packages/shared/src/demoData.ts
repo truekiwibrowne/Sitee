@@ -4,50 +4,18 @@ import { leagueMemberSchema } from './game.js';
 import { paths } from './paths.js';
 import { orgSchema, projectSchema, userSchema, zoneSchema, type LeagueTier } from './people.js';
 import type { Role } from './roles.js';
-import { taskTemplateSchema, type TaskTemplate } from './templates.js';
-import { isoWeekId, localDateIn } from './time.js';
+import { DEFAULT_FORM_IDS, STARTER_FORMS } from './formLibrary.js';
+import { taskTemplateSchema, type TemplateBody } from './templates.js';
+import { isoWeekId, localDateIn, zonedTimeToUtc } from './time.js';
 import { taskSchema } from './work.js';
 
 // The demo company: used by the emulator seed (orgs/demo-org) and by every live
 // "Try the demo" sandbox (orgs/demo-{uid}), so both always match.
 
-/** Templates every new company starts with (and the demo uses). Admins can edit them later. */
-export const DEFAULT_TEMPLATES: Record<string, Omit<TaskTemplate, 'createdAt'>> = {
-  'daily-site-report': {
-    name: 'Daily site report',
-    role: 'foreman',
-    frequency: 'workday',
-    dueTime: '18:00',
-    xp: 50,
-    reviewRule: 'siteManagerPlusCrossSite',
-    unlockRules: [],
-    fields: [
-      { id: 'weather', label: 'Weather', type: 'pickList', required: true, options: ['Sunny', 'Cloudy', 'Light rain', 'Heavy rain', 'Windy'] },
-      { id: 'labour', label: 'Labour on site', type: 'number', required: true, min: 0, unit: 'people' },
-      { id: 'photos', label: 'Site photos', type: 'photo', required: true, minPhotos: 3 },
-      { id: 'delays', label: 'Delays and cause', type: 'text', required: false },
-      { id: 'tomorrow', label: "Tomorrow's plan", type: 'text', required: true },
-    ],
-    active: true,
-  },
-  'rebar-hold-point': {
-    name: 'Rebar hold point',
-    role: 'foreman',
-    frequency: 'perHoldPoint',
-    dueTime: null,
-    xp: 30,
-    reviewRule: 'siteManager',
-    unlockRules: [],
-    fields: [
-      { id: 'element', label: 'Element / location', type: 'text', required: true },
-      { id: 'barsMatchDrawing', label: 'Bar size and spacing match drawing', type: 'pickList', required: true, options: ['Yes', 'No'] },
-      { id: 'coverMm', label: 'Cover checked', type: 'number', required: true, min: 0, unit: 'mm' },
-      { id: 'photos', label: 'Rebar photos', type: 'photo', required: true, minPhotos: 4 },
-      { id: 'notes', label: 'Notes', type: 'text', required: false },
-    ],
-    active: true,
-  },
-};
+/** Forms every new company starts with (and the demo uses). Admins add more from the library. */
+export const DEFAULT_TEMPLATES: Record<string, TemplateBody> = Object.fromEntries(
+  DEFAULT_FORM_IDS.map((id) => [id, STARTER_FORMS[id]!]),
+);
 
 export type DemoPerson = {
   key: string;
@@ -92,6 +60,8 @@ export function buildDemoOrg(opts: {
   expiresAt?: TimestampLike;
   /** IANA timezone for the project, so due times and "late" match where the visitor is. */
   timeZone?: string;
+  /** Makes a Timestamp from epoch ms (the caller's SDK), for the tasks' due times. */
+  toTimestamp?: (ms: number) => TimestampLike;
 }): DemoDoc[] {
   const { orgId, now, uidFor } = opts;
   const timeZone = opts.timeZone ?? DEMO_TIMEZONE;
@@ -177,7 +147,8 @@ export function buildDemoOrg(opts: {
       }),
     );
   task('toolbox', { kind: 'assigned', title: 'Toolbox talk', templateId: null, assignedById: uidFor(siteManager), status: 'reviewed', order: 0, xp: 10 });
-  task('report', { title: 'Daily site report', templateId: 'daily-site-report', order: 1, xp: 50 });
+  const reportDue = opts.toTimestamp?.(zonedTimeToUtc(today, '18:00', timeZone)) ?? null;
+  task('report', { title: 'Daily site report', templateId: 'daily-site-report', dueAt: reportDue, order: 1, xp: 50 });
   task('rebar', { kind: 'assigned', title: 'Rebar check', templateId: 'rebar-hold-point', assignedById: uidFor(siteManager), order: 2, xp: 30 });
   task('pour', {
     kind: 'assigned',

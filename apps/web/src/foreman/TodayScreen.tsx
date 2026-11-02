@@ -6,7 +6,6 @@ import {
   leagueMemberSchema,
   localDateIn,
   localMinutesIn,
-  minutesOf,
   paths,
   projectSchema,
   taskSchema,
@@ -23,7 +22,8 @@ import { useNow } from '../data/useNow';
 import { tapHaptic } from '../device/haptics';
 import { forgetSentReport } from '../report/ReportForm';
 import { usePendingPhotoCount } from '../report/uploader';
-import { Brix, type BrixMood } from '../ui/Brix';
+import { Character, type BrixMood } from '../ui/Brix';
+import { ReviewsWaiting, useReviewsWaiting } from './ReviewsWaiting';
 import { Confetti } from '../ui/Confetti';
 import { useCountUp } from '../ui/useCountUp';
 import { Lunchbox } from './Lunchbox';
@@ -34,8 +34,7 @@ import { TaskNode, type NodeIcon, type NodeState, type NodeTone } from './TaskNo
 const PATH_OFFSETS = [10, 64, 104, 64];
 const offsetAt = (i: number) => PATH_OFFSETS[i % PATH_OFFSETS.length]!;
 
-const DAILY_REPORT = 'daily-site-report';
-/** Brix starts worrying this close to the report's due time. */
+/** The guide starts worrying this close to a streak form's due time. */
 const WORRY_MINUTES = 120;
 
 type Celebration = { gain: string; message: string } | null;
@@ -44,11 +43,23 @@ const callOpenLunchbox = httpsCallable<void, { xp: number; gotFreeze: boolean }>
 
 const isDone = (t: Task) => t.status === 'submitted' || t.status === 'reviewed';
 
-function iconFor(task: Task, template: TaskTemplate | undefined): NodeIcon {
-  if (task.templateId === DAILY_REPORT) return 'report';
-  if (template?.frequency === 'perHoldPoint') return 'holdPoint';
-  return 'task';
+function iconFor(template: TaskTemplate | undefined): NodeIcon {
+  switch (template?.category) {
+    case 'dailyReport':
+    case 'audit':
+      return 'report';
+    case 'quality':
+    case 'healthSafety':
+    case 'environment':
+      return 'holdPoint';
+    default:
+      return 'task';
+  }
 }
+
+/** Inspections and audits are coral on the path; everything else yellow. */
+const toneOf = (template: TaskTemplate | undefined): NodeTone =>
+  template && ['quality', 'healthSafety', 'environment', 'audit'].includes(template.category) ? 'coral' : 'yellow';
 
 type Props = {
   orgId: string;
@@ -56,9 +67,11 @@ type Props = {
   onOpenTask: (task: Task & { id: string }) => void;
   /** Opens what was sent for a finished task. */
   onViewSubmission: (submissionId: string) => void;
+  /** Opens a report someone sent you to review. */
+  onReview: (reviewTask: Task & { id: string }) => void;
 };
 
-export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission }: Props) {
+export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission, onReview }: Props) {
   const now = useNow();
   const { data: user } = useDocData(`${paths.users(orgId)}/${uid}`, userSchema);
   // Due times and "today" follow the project's timezone.
@@ -72,6 +85,7 @@ export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission }: Props)
     : null;
   const { data: rawTasks, loading: tasksLoading } = useQueryData(tasksQuery, `${orgId}/${uid}/${today}`, taskSchema);
   const { data: templates } = useQueryData(collection(db, paths.taskTemplates(orgId)), `${orgId}/templates`, taskTemplateSchema);
+  const reviews = useReviewsWaiting(orgId, uid);
   const { data: league } = useDocData(today ? `${paths.leagueMembers(orgId, isoWeekId(today))}/${uid}` : null, leagueMemberSchema);
 
   // My reports for today's tasks, including ones still waiting for signal. A sent report
@@ -102,7 +116,8 @@ export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission }: Props)
       ),
     [rawTasks, sent],
   );
-  const tasks = [...withSent].sort((a, b) => a.order - b.order);
+  // Reviews of other people's reports are listed separately, not on the path.
+  const tasks = withSent.filter((t) => t.kind !== 'review').sort((a, b) => a.order - b.order);
   const templateById = new Map(templates.map((t) => [t.id, t]));
   const pendingPhotos = usePendingPhotoCount();
   // Excused tasks (e.g. a streak freeze covered them) count as done for the lunchbox.
@@ -142,7 +157,9 @@ export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission }: Props)
       return;
     }
 
-    const finished = withSent.find((t) => isDone(t) && !['submitted', 'reviewed'].includes(previous.statuses.get(t.id) ?? ''));
+    const finished = withSent.find(
+      (t) => t.kind !== 'review' && isDone(t) && !['submitted', 'reviewed'].includes(previous.statuses.get(t.id) ?? ''),
+    );
     const xpGain = previous.xp !== undefined ? user.xpTotal - previous.xp : 0;
     if (!finished && xpGain <= 0) return;
 
@@ -150,14 +167,14 @@ export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission }: Props)
     setCelebration({
       gain: xpGain > 0 ? `+${xpGain} XP` : `+${finished!.xp} XP`,
       message: finished
-        ? finished.templateId === DAILY_REPORT
-          ? sent.get(finished.id)
-            ? 'Report saved! It sends the moment you have signal.'
-            : 'Report in! Your streak is safe. Your site manager will review it.'
-          : `${finished.title} done. Nice work!`
-        : `+${xpGain} XP landed. Your work was reviewed!`,
+        ? sent.get(finished.id)
+          ? `${finished.title} saved! It sends the moment you have signal.`
+          : templates.find((t) => t.id === finished.templateId)?.countsForStreak
+            ? `${finished.title} in! Your streak is safe.`
+            : `${finished.title} done. Nice work!`
+        : `+${xpGain} XP landed. Nice work!`,
     });
-  }, [user, withSent, sent, tasksLoading, lunchboxOpened]);
+  }, [user, withSent, sent, tasksLoading, lunchboxOpened, templates]);
 
   useEffect(() => {
     if (!celebration) return;
@@ -168,22 +185,28 @@ export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission }: Props)
   if (!user || !project) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <Brix mood="idle" />
+        <Character id={user?.avatar ?? 'brix'} mood="idle" />
       </div>
     );
   }
 
-  // Brix's message and mood for the day so far.
+  // The guide's message and mood for the day so far, led by the next streak form due.
   const firstName = user.name.split(' ')[0];
-  const report = tasks.find((t) => t.templateId === DAILY_REPORT);
-  const dueTime = templateById.get(DAILY_REPORT)?.dueTime;
-  const minutesLeft = dueTime ? minutesOf(dueTime) - localMinutesIn(project.timezone, now) : null;
+  const report = tasks.find((t) => !isDone(t) && t.dueAt && templateById.get(t.templateId ?? '')?.countsForStreak);
+  const minutesLeft = report?.dueAt ? Math.floor((report.dueAt.toMillis() - now.getTime()) / 60_000) : null;
+  const dueLabel = (t: Task) => (t.dueAt ? timeLabel(t.dueAt.toMillis()) : null);
+  function timeLabel(ms: number) {
+    const minutes = localMinutesIn(project!.timezone, new Date(ms));
+    return formatTimeOfDay(`${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`);
+  }
   const left = tasks.length - doneCount;
 
   let mood: BrixMood = 'idle';
   let message: string;
   if (tasksLoading) {
     message = 'Getting your day ready…';
+  } else if (tasks.length === 0 && reviews.length > 0) {
+    message = `${reviews.length} ${reviews.length === 1 ? 'report' : 'reports'} to review, ${firstName}. Your stars set their XP.`;
   } else if (tasks.length === 0) {
     mood = 'sleeping';
     message = `No tasks today, ${firstName}. Enjoy the quiet!`;
@@ -191,12 +214,12 @@ export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission }: Props)
     message = lunchboxOpened
       ? `All done for today, ${firstName}. See you tomorrow!`
       : `All done for today, ${firstName}! Your lunchbox is ready.`;
-  } else if (report && !isDone(report) && (report.status === 'late' || (minutesLeft !== null && minutesLeft <= 0))) {
+  } else if (report && (report.status === 'late' || (minutesLeft !== null && minutesLeft <= 0))) {
     mood = 'worried';
-    message = `Your site report is late! Send it now to save your ${user.streak}-day streak.`;
-  } else if (report && !isDone(report) && dueTime) {
+    message = `Your ${report.title.toLowerCase()} is late! Send it now to save your ${user.streak}-day streak.`;
+  } else if (report) {
     if (minutesLeft !== null && minutesLeft <= WORRY_MINUTES) mood = 'worried';
-    message = `${left} ${left === 1 ? 'task' : 'tasks'} to go, ${firstName}! Submit your site report by ${formatTimeOfDay(dueTime)} to keep your ${user.streak}-day streak.`;
+    message = `${left} ${left === 1 ? 'task' : 'tasks'} to go, ${firstName}! Send your ${report.title.toLowerCase()} by ${dueLabel(report)} to keep your ${user.streak}-day streak.`;
   } else {
     message = `${left} ${left === 1 ? 'task' : 'tasks'} to go, ${firstName}. Keep it rolling!`;
   }
@@ -215,12 +238,8 @@ export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission }: Props)
     return t === current ? 'current' : 'open';
   }
 
-  function zoneName(zoneId: string) {
+  function zoneName(zoneId: string | null) {
     return zones.find((z) => z.id === zoneId)?.name ?? null;
-  }
-
-  function toneFor(t: Task): NodeTone {
-    return templateById.get(t.templateId ?? '')?.frequency === 'perHoldPoint' ? 'coral' : 'yellow';
   }
 
   return (
@@ -233,7 +252,7 @@ export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission }: Props)
       )}
 
       <div className="relative flex items-center gap-2.5">
-        <Brix mood={mood} />
+        <Character id={user.avatar} mood={mood} />
         <p className="flex-1 rounded-card border-2 border-card-line bg-white px-3.5 py-3 text-[15px] leading-snug" aria-live="polite">
           {message}
         </p>
@@ -244,14 +263,17 @@ export function TodayScreen({ orgId, uid, onOpenTask, onViewSubmission }: Props)
         )}
       </div>
 
+      <ReviewsWaiting reviews={reviews} onReview={onReview} />
+
       <div className="flex flex-col gap-4 pt-1">
         {tasks.map((t, i) => (
           <TaskNode
             key={t.id}
             task={t}
             state={nodeState(t)}
-            tone={toneFor(t)}
-            icon={iconFor(t, templateById.get(t.templateId ?? ''))}
+            tone={toneOf(templateById.get(t.templateId ?? ''))}
+            icon={iconFor(templateById.get(t.templateId ?? ''))}
+            dueLabel={dueLabel(t)}
             offset={offsetAt(i)}
             waitingOn={t.dependsOn.map((id) => tasks.find((d) => d.id === id)?.title).find(Boolean) ?? null}
             pendingSync={sent.get(t.id) === true}

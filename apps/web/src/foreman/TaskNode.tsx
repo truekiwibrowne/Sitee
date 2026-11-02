@@ -26,7 +26,7 @@ const fill: Record<NodeTone, string> = {
   coral: 'bg-coral shadow-node-coral',
 };
 
-function subtitle(task: Task, state: NodeState, waitingOn: string | null, pendingSync: boolean) {
+function subtitle(task: Task, state: NodeState, waitingOn: string | null, pendingSync: boolean, dueLabel: string | null) {
   switch (state) {
     case 'done':
       if (pendingSync) return 'Saved · sends when you have signal';
@@ -38,7 +38,7 @@ function subtitle(task: Task, state: NodeState, waitingOn: string | null, pendin
     case 'excused':
       return 'Excused today';
     default:
-      return `Tap to start · +${task.xp} XP`;
+      return `${dueLabel ? `Due ${dueLabel}` : 'Tap to start'} · +${task.xp} XP`;
   }
 }
 
@@ -54,14 +54,16 @@ type Props = {
   pendingSync?: boolean;
   /** Shown when the person works in more than one zone. */
   zoneName?: string | null;
+  /** e.g. "8 am", in the project's time. */
+  dueLabel?: string | null;
   onOpen: () => void;
   /** For finished tasks with a report: opens what was sent. */
   onView?: () => void;
 };
 
 /** One stop on the day's winding task path. */
-export function TaskNode({ task, state, tone, icon, offset, waitingOn, pendingSync = false, zoneName, onOpen, onView }: Props) {
-  const label = subtitle(task, state, waitingOn, pendingSync);
+export function TaskNode({ task, state, tone, icon, offset, waitingOn, pendingSync = false, zoneName, dueLabel = null, onOpen, onView }: Props) {
+  const label = subtitle(task, state, waitingOn, pendingSync, dueLabel);
 
   let circle;
   if (state === 'done') {

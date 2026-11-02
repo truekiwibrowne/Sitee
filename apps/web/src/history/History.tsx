@@ -19,7 +19,7 @@ import { getPhoto } from '../report/photoStore';
 
 // Past reports: what you sent, the photos, and what your reviewer thought.
 
-const when = (ms: number) =>
+export const when = (ms: number) =>
   new Date(ms).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 
 /** My reports, newest first. */
@@ -57,7 +57,7 @@ export function HistoryList({ orgId, uid, onOpen }: { orgId: string; uid: string
   );
 }
 
-function Answer({ field, value, photos }: { field: TemplateField; value: AnswerValue | undefined; photos: Photo[] }) {
+export function Answer({ field, value, photos }: { field: TemplateField; value: AnswerValue | undefined; photos: Photo[] }) {
   if (field.type === 'photo') {
     const ids = Array.isArray(value) ? value : [];
     if (ids.length === 0) return <p className="text-muted">No photos</p>;
@@ -119,7 +119,7 @@ function PhotoThumb({ photo, id }: { photo: Photo | undefined; id: string }) {
   );
 }
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
+export function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-2 rounded-card border-2 border-card-line bg-white p-4">
       <h2 className="text-sm font-black text-muted uppercase">{title}</h2>

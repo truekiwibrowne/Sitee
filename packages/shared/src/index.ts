@@ -4,6 +4,7 @@ export * from './characters.js';
 export * from './xp.js';
 export * from './people.js';
 export * from './templates.js';
+export * from './formLibrary.js';
 export * from './work.js';
 export * from './game.js';
 export * from './training.js';

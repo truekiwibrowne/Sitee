@@ -32,7 +32,8 @@ service firebase.storage {
         && request.resource.size > 0
         && request.resource.size < maxBytes()
         && task(orgId, submissionId).assigneeId == request.auth.uid
-        && task(orgId, submissionId).zoneId == zoneId;
+        // Project-level tasks have no zone; their photos go under zones/project/.
+        && (task(orgId, submissionId).zoneId == null ? zoneId == 'project' : task(orgId, submissionId).zoneId == zoneId);
     }
   }
 }

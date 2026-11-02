@@ -14,6 +14,7 @@ import {
   localDateIn,
   paths,
   zonedTimeToUtc,
+  STARTER_FORMS,
   type DemoPerson,
 } from '@site-streak/shared';
 import { handleReview, handleSubmission } from '../../functions/src/work.js';
@@ -43,6 +44,7 @@ async function seedOrg(opts: { sandbox?: boolean; dailyXpCap?: number } = {}) {
     orgId,
     now: Timestamp.now(),
     uidFor,
+    toTimestamp: (ms) => Timestamp.fromMillis(ms),
     ...(opts.sandbox ? { expiresAt: Timestamp.fromMillis(Date.now() + 3_600_000) } : {}),
   });
   const batch = db().batch();
@@ -184,12 +186,12 @@ describe('hourly tick', () => {
   it('creates a report task per zone once, then resets the streak when one is missed', async () => {
     const { orgId, uid } = await seedOrg();
     await runHourlyTick(evening);
-    const taskPath = `${paths.tasks(orgId)}/${recurringTaskId(monday, 'daily-site-report', 'zone-a', uid('foreman'))}`;
+    const taskPath = `${paths.tasks(orgId)}/${recurringTaskId(monday, 'daily-site-report', '18:00', 'zone-a', uid('foreman'))}`;
     expect((await get(taskPath)).status).toBe('late');
     expect((await get(`${paths.users(orgId)}/${uid('foreman')}`)).streak).toBe(0);
-    expect((await get(`${paths.zones(orgId)}/zone-a`)).tasksGeneratedFor).toBe(monday);
+    expect((await get(`${paths.projects(orgId)}/riverside`)).tasksGeneratedFor).toBe(monday);
     // The foreman isn't in Block B, so no report there.
-    expect((await db().doc(`${paths.tasks(orgId)}/${recurringTaskId(monday, 'daily-site-report', 'zone-b', uid('foreman'))}`).get()).exists).toBe(false);
+    expect((await db().doc(`${paths.tasks(orgId)}/${recurringTaskId(monday, 'daily-site-report', '18:00', 'zone-b', uid('foreman'))}`).get()).exists).toBe(false);
 
     // Running again creates nothing new and doesn't re-check.
     await db().doc(`${paths.users(orgId)}/${uid('foreman')}`).update({ streak: 5 });
@@ -202,7 +204,7 @@ describe('hourly tick', () => {
     await db().doc(`${paths.users(orgId)}/${uid('foreman')}`).update({ zoneIds: ['zone-a', 'zone-b'], streakFreezes: 1 });
     await runHourlyTick(evening);
     for (const zone of ['zone-a', 'zone-b']) {
-      expect((await get(`${paths.tasks(orgId)}/${recurringTaskId(monday, 'daily-site-report', zone, uid('foreman'))}`)).status).toBe('excused');
+      expect((await get(`${paths.tasks(orgId)}/${recurringTaskId(monday, 'daily-site-report', '18:00', zone, uid('foreman'))}`)).status).toBe('excused');
     }
     expect(await get(`${paths.users(orgId)}/${uid('foreman')}`)).toMatchObject({ streak: 12, streakFreezes: 0 });
   });
@@ -213,6 +215,67 @@ describe('hourly tick', () => {
     await cleanupExpiredDemos();
     expect((await db().doc(paths.org(orgId)).get()).exists).toBe(false);
     expect((await db().collection(paths.users(orgId)).get()).size).toBe(0);
+  });
+});
+
+describe('forms: schedules, projects and review routing', () => {
+  const monday = '2026-11-02';
+  const morning = new Date(zonedTimeToUtc(monday, '06:00', DEMO_TIMEZONE));
+
+  async function addForm(orgId: string, id: string, form: Record<string, unknown>) {
+    await db().doc(`${paths.taskTemplates(orgId)}/${id}`).set({ ...STARTER_FORMS[id], ...form, createdAt: Timestamp.now() });
+  }
+
+  it('a form with two due times makes two tasks; a project-level monthly audit goes to the project manager', async () => {
+    const { orgId, uid } = await seedOrg();
+    await addForm(orgId, 'toolbox-talk', { dueTimes: ['08:00', '13:00'] });
+    // 2 Nov is not the 1st, so move the audit to the 2nd.
+    await addForm(orgId, 'internal-audit', { monthDays: [2] });
+    await runHourlyTick(morning);
+    for (const time of ['08:00', '13:00']) {
+      expect((await get(`${paths.tasks(orgId)}/${recurringTaskId(monday, 'toolbox-talk', time, 'zone-a', uid('foreman'))}`)).status).toBe('open');
+    }
+    const audit = await get(`${paths.tasks(orgId)}/${recurringTaskId(monday, 'internal-audit', '16:00', null, uid('projectManager'))}`);
+    expect(audit).toMatchObject({ status: 'open', zoneId: null, assigneeId: uid('projectManager') });
+  });
+
+  it('forms only run on the projects they’re for', async () => {
+    const { orgId, uid } = await seedOrg();
+    await addForm(orgId, 'toolbox-talk', { projectIds: ['some-other-project'] });
+    await runHourlyTick(morning);
+    expect((await db().doc(`${paths.tasks(orgId)}/${recurringTaskId(monday, 'toolbox-talk', '08:00', 'zone-a', uid('foreman'))}`).get()).exists).toBe(false);
+  });
+
+  it('a form with no review pays XP straight away at two stars', async () => {
+    const { orgId, uid } = await seedOrg();
+    await addForm(orgId, 'toolbox-talk', {});
+    const taskId = 'toolbox-today';
+    await db().doc(`${paths.tasks(orgId)}/${taskId}`).set({
+      ...(await get(`${paths.tasks(orgId)}/${today()}-report`)),
+      templateId: 'toolbox-talk',
+      title: 'Toolbox talk',
+      xp: 20,
+      dueAt: Timestamp.fromMillis(zonedTimeToUtc(today(), '07:58', DEMO_TIMEZONE)), // Due 2 min before it's sent: late.
+    });
+    await submit(orgId, taskId, uid('foreman'), 'toolbox-talk');
+    expect((await get(`${paths.tasks(orgId)}/${taskId}`)).status).toBe('reviewed');
+    expect((await db().doc(`${paths.tasks(orgId)}/review_${taskId}`).get()).exists).toBe(false);
+    // 20 × 1 (two stars) × 0.5 (late) × 1.1 (quick) = 11
+    expect(await get(`${paths.xpEvents(orgId)}/auto_${taskId}`)).toMatchObject({ amount: 11, breakdown: { stars: 1, earliness: 0.5, speed: 1.1 } });
+  });
+
+  it('a site manager’s report goes to the project manager to review', async () => {
+    const { orgId, uid } = await seedOrg();
+    await addForm(orgId, 'hs-site-inspection', {});
+    const taskId = 'hs-today';
+    await db().doc(`${paths.tasks(orgId)}/${taskId}`).set({
+      ...(await get(`${paths.tasks(orgId)}/${today()}-report`)),
+      assigneeId: uid('siteManager'),
+      templateId: 'hs-site-inspection',
+      title: 'Health & safety site inspection',
+    });
+    await submit(orgId, taskId, uid('siteManager'), 'hs-site-inspection');
+    expect((await get(`${paths.tasks(orgId)}/review_${taskId}`)).assigneeId).toBe(uid('projectManager'));
   });
 });
 

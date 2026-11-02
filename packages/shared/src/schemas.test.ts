@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { timestamp } from './common.js';
 import { weekId } from './game.js';
-import { answersSchemaFor, taskTemplateSchema, type TemplateField } from './templates.js';
+import { STARTER_FORMS } from './formLibrary.js';
+import { answersSchemaFor, formRunsOn, taskTemplateSchema, templateBodySchema, type TemplateField } from './templates.js';
 import { starsSchema } from './work.js';
 
 const ts = { seconds: 1, nanoseconds: 0, toMillis: () => 1000 };
@@ -92,5 +93,39 @@ describe('small schemas', () => {
   it('weekId is an ISO week', () => {
     expect(weekId.safeParse('2026-W44').success).toBe(true);
     expect(weekId.safeParse('2026-44').success).toBe(false);
+  });
+});
+
+describe('forms: schedules and the starter library', () => {
+  const schedule = { weekdays: [], monthDays: [], yearDates: [], onceDate: null };
+
+  it('runs on the right days', () => {
+    // 2 Nov 2026 is a Monday; 1 Nov a Sunday; Feb 2027 has 28 days.
+    expect(formRunsOn({ ...schedule, frequency: 'workday' }, '2026-11-01')).toBe(false);
+    expect(formRunsOn({ ...schedule, frequency: 'weekly', weekdays: [1, 3] }, '2026-11-02')).toBe(true);
+    expect(formRunsOn({ ...schedule, frequency: 'monthly', monthDays: [31] }, '2027-02-28')).toBe(true);
+    expect(formRunsOn({ ...schedule, frequency: 'yearly', yearDates: ['11-02'] }, '2026-11-02')).toBe(true);
+    expect(formRunsOn({ ...schedule, frequency: 'once', onceDate: '2026-11-03' }, '2026-11-02')).toBe(false);
+    expect(formRunsOn({ ...schedule, frequency: 'onDemand' }, '2026-11-02')).toBe(false);
+  });
+
+  it('reads forms saved in the old format', () => {
+    const old = taskTemplateSchema.parse({
+      name: 'Daily site report',
+      role: 'foreman',
+      frequency: 'workday',
+      dueTime: '18:00',
+      xp: 50,
+      reviewRule: 'siteManagerPlusCrossSite',
+      unlockRules: [],
+      fields: dailyReportFields,
+      active: true,
+      createdAt: ts,
+    });
+    expect(old).toMatchObject({ category: 'dailyReport', dueTimes: ['18:00'], reviewRule: 'levelAbove', countsForStreak: true, projectIds: [] });
+  });
+
+  it('every starter form is valid', () => {
+    for (const form of Object.values(STARTER_FORMS)) expect(templateBodySchema.safeParse(form).success).toBe(true);
   });
 });
